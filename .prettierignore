@@ -1,0 +1,10 @@
+.next
+node_modules
+build
+out
+coverage
+package-lock.json
+public
+figma-assets
+_client/assets
+_client/data

@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * Design tokens — derived 1:1 from the Figma frame "Design" (lina H.)
+ * Tailwind v4 reads these via the @theme directive, exposing them as
+ * utilities (bg-background, text-muted, font-sans, etc.) and as CSS
+ * custom properties (var(--color-…)).
+ * ------------------------------------------------------------------ */
+@theme {
+  /* Palette */
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-muted: #2c2c2c; /* secondary body text   */
+  --color-gray: #737373; /* dividers, footer marks */
+  --color-placeholder: #d9d9d9; /* image placeholders     */
+
+  /* Typography */
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Pill control geometry (buttons, chips) */
+  --radius-pill: 300px;
+
+  /* Fluid display sizes used by section headings in the mockup.
+     clamp() keeps the giant Figma type readable down to mobile. */
+  --text-display: clamp(3.5rem, 12vw, 12.5rem); /* 200px "Stylist"     */
+  --text-mega: clamp(4rem, 18vw, 21.875rem); /* 350px footer "lina" */
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Component utilities
+ * ------------------------------------------------------------------ */
+@layer components {
+  /* UPPERCASE heading helper — the mockup sets every heading in caps.
+     Letter-spacing is trimmed slightly because Inter's caps run wide. */
+  .heading-upper {
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  /* Pill button — 2px border, fully rounded, matches "Записаться" /
+     "Подробнее" controls. Color comes from tokens, never hardcoded. */
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem; /* 10px, the Figma auto-layout gap */
+    border: 2px solid var(--color-foreground);
+    border-radius: var(--radius-pill);
+    text-transform: uppercase;
+    transition:
+      background-color 200ms ease-out,
+      color 200ms ease-out;
+  }
+
+  .btn-pill:hover {
+    background-color: var(--color-foreground);
+    color: var(--color-background);
+  }
+}
+
+/* Respect users who prefer reduced motion — disable all transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
