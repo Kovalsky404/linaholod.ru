@@ -33,10 +33,33 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* Высота sticky-шапки, чтобы якоря не уезжали под неё. */
+    scroll-padding-top: 5rem;
   }
 
   body {
     text-rendering: optimizeLegibility;
+  }
+
+  /* Единый видимый фокус для клавиатуры (focus-visible). Контурное кольцо
+     токеном foreground со смещением; outline сам следует border-radius
+     элемента, поэтому круглые кнопки получают круглое кольцо. */
+  :focus-visible {
+    outline: 2px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  /* Нейтрализуем голубую подсветку автозаполнения (WebKit/Chrome):
+     заливаем фон токеном через inset-тень, текст — основным цветом. */
+  .form-field:-webkit-autofill,
+  .form-field:-webkit-autofill:hover,
+  .form-field:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-foreground);
+    -webkit-box-shadow: 0 0 0 1000px var(--color-background) inset;
+    box-shadow: 0 0 0 1000px var(--color-background) inset;
+    caret-color: var(--color-foreground);
+    transition: background-color 9999s ease-out 0s;
   }
 }
 
@@ -44,12 +67,57 @@
  * Component utilities
  * ------------------------------------------------------------------ */
 @layer components {
+  /* Единый контейнер контента: max-width 1700px, центрирование,
+     адаптивные боковые поля. Используется в шапке, футере и всех секциях,
+     чтобы сайт был выровнен одинаково и не растягивался на всю ширину. */
+  .container-site {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 1700px;
+    padding-inline: 1.25rem; /* 20px — мобайл */
+  }
+  @media (min-width: 640px) {
+    .container-site {
+      padding-inline: 2rem; /* 32px — sm */
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-site {
+      padding-inline: 3rem; /* 48px — lg */
+    }
+  }
+
+  /* Скрытый скроллбар для карусели (прокрутка остаётся, полоса не видна). */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   /* UPPERCASE heading helper — the mockup sets every heading in caps.
      Letter-spacing is trimmed slightly because Inter's caps run wide. */
   .heading-upper {
     text-transform: uppercase;
     letter-spacing: -0.01em;
     line-height: 1;
+  }
+
+  /* Бегущие ленты отзывов (marquee). Лента содержит контент ДВАЖДЫ и едет
+     на -50% (влево) или с -50% к 0 (вправо) — переход бесшовный.
+     На hover пауза; при reduced-motion анимация отключается (см. media ниже). */
+  .marquee {
+    display: flex;
+    width: max-content;
+    flex-wrap: nowrap;
+    will-change: transform;
+  }
+  .marquee--left {
+    animation: marquee-left var(--marquee-duration, 60s) linear infinite;
+  }
+  .marquee--right {
+    animation: marquee-right var(--marquee-duration, 60s) linear infinite;
   }
 
   /* Pill button — 2px border, fully rounded, matches "Записаться" /
@@ -70,6 +138,24 @@
   .btn-pill:hover {
     background-color: var(--color-foreground);
     color: var(--color-background);
+  }
+}
+
+/* Marquee keyframes — контент продублирован, поэтому 50% = ровно один набор. */
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 

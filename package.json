@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:studio": "next dev -p 3333",
+    "seed": "node scripts/seed.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -11,9 +13,14 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"*.{ts,mjs,json}\""
   },
   "dependencies": {
+    "@sanity/image-url": "^2.1.1",
+    "@sanity/vision": "^5.30.0",
+    "lucide-react": "^1.17.0",
     "next": "16.2.7",
+    "next-sanity": "^13.0.11",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sanity": "^5.30.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

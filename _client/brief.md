@@ -12,8 +12,8 @@
 <!-- Figma, референсы, текущий сайт, соцсети, источники контента -->
 
 - **Figma:** https://www.figma.com/design/I6xARzgf92Fowm0CiuNRkw/ (фрейм «Design», 1920×7228)
-- Instagram:
-- WhatsApp / Telegram:
+- Instagram: https://www.instagram.com/_bulochka__s__makom_/
+- WhatsApp / Telegram: https://t.me/AHL2060
 - Референсы (другие сайты):
 
 ## 2. Загруженные материалы

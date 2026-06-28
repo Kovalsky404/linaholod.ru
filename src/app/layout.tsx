@@ -1,7 +1,11 @@
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
+/**
+ * Корневой лейаут — общий каркас <html>/<body> и шрифт.
+ * Хром публичного сайта (шапка/футер, метаданные, JSON-LD) — в (site)/layout.
+ * Встроенная Studio (/studio) рендерится вне (site), без хрома сайта.
+ */
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "cyrillic"],
@@ -9,20 +13,12 @@ const inter = Inter({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "lina H. — стилист",
-  description:
-    "Лина Холод — персональный стилист. Шопинг-сопровождение, разбор гардероба, консультации.",
-};
-
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru" className={`${inter.variable} h-full antialiased`}>
-      <body className="bg-background text-foreground flex min-h-full flex-col font-sans">
+      <body className="bg-background text-foreground font-sans">
         {children}
       </body>
     </html>
