@@ -142,15 +142,15 @@ export function Booking({
   return (
     <section
       id="book"
-      className="scroll-mt-20 pb-20 sm:pb-28"
+      className="scroll-mt-20 pb-12 sm:pb-28"
       aria-labelledby="book-heading"
     >
-      <div className="container-site border-foreground/10 border-t pt-20 sm:pt-28">
+      <div className="container-site border-foreground/10 border-t pt-12 sm:pt-28">
         <Reveal>
           <SectionHeading id="book-heading">Записаться</SectionHeading>
         </Reveal>
 
-        <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
+        <div className="mt-8 grid gap-10 lg:mt-14 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
           {/* ЛЕВО: приглашение, шаги, контакты */}
           <Reveal className="flex flex-col">
             <p className="text-muted max-w-prose text-lg leading-relaxed sm:text-xl">

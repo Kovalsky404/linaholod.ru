@@ -36,12 +36,12 @@ export function Services({
       className="scroll-mt-20 pb-6"
       aria-labelledby="services-heading"
     >
-      <div className="container-site border-foreground/10 border-t pt-20 sm:pt-28">
+      <div className="container-site border-foreground/10 border-t pt-12 sm:pt-28">
         <Reveal>
           <SectionHeading id="services-heading">Услуги</SectionHeading>
         </Reveal>
 
-        <ul className="mt-10 flex flex-col gap-14 lg:mt-16 lg:gap-24">
+        <ul className="mt-8 flex flex-col gap-10 lg:mt-16 lg:gap-24">
           {services.map((service, i) => {
             const imageRight = i % 2 === 1;
             // Фото — узкая колонка (≈40% ряда), текст получает больше воздуха.

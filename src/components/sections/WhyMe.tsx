@@ -37,15 +37,15 @@ export function WhyMe({ content }: { content?: WhyMeContent } = {}) {
   return (
     <section
       id="why"
-      className="scroll-mt-20 pb-20 sm:pb-28"
+      className="scroll-mt-20 pb-12 sm:pb-28"
       aria-labelledby="why-heading"
     >
-      <div className="container-site border-foreground/10 border-t pt-20 sm:pt-28">
+      <div className="container-site border-foreground/10 border-t pt-12 sm:pt-28">
         <Reveal>
           <SectionHeading id="why-heading">{title}</SectionHeading>
         </Reveal>
 
-        <div className="mt-10 grid items-center gap-10 lg:mt-16 lg:grid-cols-[11fr_9fr] lg:gap-16">
+        <div className="mt-8 grid items-center gap-8 lg:mt-16 lg:grid-cols-[11fr_9fr] lg:gap-16">
           {/* Текстовый блок — слева */}
           <Reveal delay={80} className="order-2 lg:order-1">
             <div

@@ -107,11 +107,11 @@ export function Reviews({ reviews }: { reviews: Review[] }) {
   return (
     <section
       id="reviews"
-      className="scroll-mt-20 pb-10 sm:pb-14"
+      className="scroll-mt-20 pb-8 sm:pb-14"
       aria-labelledby="reviews-heading"
     >
       {/* Заголовок — в контейнере. Отступ до разделителя уменьшен вдвое. */}
-      <div className="container-site border-foreground/10 border-t pt-10 sm:pt-14">
+      <div className="container-site border-foreground/10 border-t pt-8 sm:pt-14">
         <Reveal>
           <SectionHeading id="reviews-heading">Отзывы</SectionHeading>
         </Reveal>
@@ -121,7 +121,7 @@ export function Reviews({ reviews }: { reviews: Review[] }) {
           Большой вертикальный зазор между лентами, чтобы карточки не слипались. */}
       <Reveal
         delay={80}
-        className="mt-12 flex flex-col gap-12 sm:gap-16 lg:mt-16"
+        className="mt-8 flex flex-col gap-8 sm:gap-16 lg:mt-16"
       >
         <MarqueeRow items={rowTop} direction="right" duration="55s" />
         <MarqueeRow items={rowBottom} direction="left" duration="65s" />

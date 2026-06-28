@@ -71,7 +71,7 @@ export function About({ content }: { content?: AboutContent } = {}) {
   return (
     <section
       id="about"
-      className="scroll-mt-20 overflow-x-clip py-20 sm:py-28"
+      className="scroll-mt-20 overflow-x-clip py-12 sm:py-28"
       aria-labelledby="about-heading"
     >
       <div className="container-site">
@@ -173,7 +173,7 @@ export function About({ content }: { content?: AboutContent } = {}) {
 
         {/* ───────────────────── МОБАЙЛ (<lg) ─────────────────────
             Одна колонка: STYLIST → текст → центр-фото → пары фото. */}
-        <div className="mt-10 flex flex-col gap-8 lg:hidden">
+        <div className="mt-8 flex flex-col gap-8 lg:hidden">
           {/* На мобайле — визуальный дубль STYLIST как <p> (единственный
               <h1> страницы остаётся в десктоп-блоке, в DOM присутствует). */}
           <Reveal>
