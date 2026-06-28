@@ -51,9 +51,12 @@ export function Booking({
   const [status, setStatus] = useState<Status>("idle");
   const [serverError, setServerError] = useState<string>("");
   const [service, setService] = useState<string>("");
+  const [consent, setConsent] = useState(false);
+  const [consentError, setConsentError] = useState(false);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const contactRef = useRef<HTMLInputElement>(null);
+  const consentRef = useRef<HTMLInputElement>(null);
 
   // Опции услуги для select (значение = название, как раньше → payload не меняется).
   const serviceOptions = useMemo<SelectOption[]>(
@@ -91,6 +94,15 @@ export function Booking({
       return;
     }
 
+    // Согласие на обработку ПД обязательно (152-ФЗ): без него не отправляем.
+    if (!consent) {
+      setConsentError(true);
+      setStatus("idle");
+      consentRef.current?.focus();
+      return;
+    }
+    setConsentError(false);
+
     setErrors({});
     setServerError("");
     setStatus("sending");
@@ -111,6 +123,7 @@ export function Booking({
         setStatus("success");
         form.reset();
         setService("");
+        setConsent(false);
         return;
       }
 
@@ -286,6 +299,55 @@ export function Booking({
                   tabIndex={-1}
                   autoComplete="off"
                 />
+              </div>
+
+              {/* Согласие на обработку ПД — обязательно (152-ФЗ) */}
+              <div className="flex flex-col gap-1">
+                <label className="text-muted flex items-start gap-3 text-sm leading-relaxed">
+                  <input
+                    ref={consentRef}
+                    type="checkbox"
+                    name="consent"
+                    checked={consent}
+                    onChange={(e) => {
+                      setConsent(e.target.checked);
+                      if (e.target.checked) setConsentError(false);
+                    }}
+                    required
+                    aria-required="true"
+                    aria-invalid={consentError ? "true" : undefined}
+                    aria-describedby={
+                      consentError ? fid("consent-err") : undefined
+                    }
+                    className="border-foreground accent-foreground mt-0.5 h-5 w-5 shrink-0 cursor-pointer border-2"
+                  />
+                  <span>
+                    Я даю{" "}
+                    <a
+                      href="/consent"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-foreground underline"
+                    >
+                      согласие на обработку персональных данных
+                    </a>{" "}
+                    и подтверждаю ознакомление с{" "}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-foreground underline"
+                    >
+                      Политикой
+                    </a>
+                    .
+                  </span>
+                </label>
+                {consentError ? (
+                  <p id={fid("consent-err")} className="text-muted text-sm">
+                    Чтобы отправить заявку, отметьте согласие.
+                  </p>
+                ) : null}
               </div>
 
               <button

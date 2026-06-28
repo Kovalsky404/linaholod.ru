@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BRAND, CTA, NAV_LINKS, SOCIAL_LINKS } from "@/lib/site-config";
 import { SocialIcon } from "@/components/ui/SocialIcon";
 
@@ -55,6 +56,22 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
             </ul>
           </div>
         </nav>
+
+        {/* Правовые ссылки */}
+        <div className="text-gray mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+          <Link
+            href="/privacy"
+            className="hover:text-foreground transition-colors duration-200 ease-out"
+          >
+            Политика обработки персональных данных
+          </Link>
+          <Link
+            href="/consent"
+            className="hover:text-foreground transition-colors duration-200 ease-out"
+          >
+            Согласие на обработку данных
+          </Link>
+        </div>
       </div>
 
       {/* Гигантская надпись «LINA H» — на всю ширину, по центру, вплотную
