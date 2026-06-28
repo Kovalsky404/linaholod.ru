@@ -40,7 +40,7 @@ function WhatsAppGlyph(props: IconProps) {
  * внутри глиф 28px. Hover-инверсия в духе pill-кнопки.
  */
 export function SocialIcon({ social }: { social: SocialLink }) {
-  const glyphProps: IconProps = { width: 22, height: 22 };
+  const glyphProps: IconProps = { width: 20, height: 20 };
   const glyph =
     social.key === "telegram" ? (
       <TelegramGlyph {...glyphProps} />
@@ -56,7 +56,7 @@ export function SocialIcon({ social }: { social: SocialLink }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={social.label}
-      className="border-foreground text-foreground hover:bg-foreground hover:text-background inline-flex h-11 w-11 items-center justify-center rounded-full border-2 transition-colors duration-200 ease-out"
+      className="border-foreground text-foreground hover:bg-foreground hover:text-background inline-flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors duration-200 ease-out sm:h-11 sm:w-11"
     >
       {glyph}
     </a>

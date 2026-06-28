@@ -137,9 +137,10 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
               </button>
             </div>
 
+            {/* На мобайле кнопку убираем отсюда — она ниже, под работами. */}
             <a
               href={CTA.href}
-              className="btn-pill px-5 py-2.5 text-sm font-medium"
+              className="btn-pill hidden px-5 py-2.5 text-sm font-medium sm:inline-flex"
             >
               {CTA.label}
             </a>
@@ -188,6 +189,16 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
               </li>
             ))}
           </ul>
+        </Reveal>
+
+        {/* CTA под работами — только мобайл (на десктопе кнопка в шапке секции). */}
+        <Reveal delay={120} className="mt-8 flex justify-center sm:hidden">
+          <a
+            href={CTA.href}
+            className="btn-pill w-fit px-7 py-2.5 text-sm font-medium"
+          >
+            {CTA.label}
+          </a>
         </Reveal>
       </div>
 

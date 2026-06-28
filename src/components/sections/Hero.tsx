@@ -16,15 +16,17 @@ export function Hero({ image }: { image?: ResolvedImage } = {}) {
 
   return (
     <section aria-label="Главное изображение">
-      <div className="container-site">
-        <div className="bg-placeholder relative aspect-[1860/1000] w-full overflow-hidden">
+      {/* Мобайл: фото full-bleed (от края до края) высотой ~50vh, по центру.
+          Десктоп (sm+): контейнер 1700px с пропорцией 1860:1000. */}
+      <div className="mx-auto w-full sm:max-w-[1700px] sm:px-8 lg:px-12">
+        <div className="bg-placeholder relative h-[52svh] w-full overflow-hidden sm:aspect-[1860/1000] sm:h-auto">
           <Image
             src={src}
             alt=""
             fill
             priority
             unoptimized={unoptimized}
-            sizes="(max-width: 1860px) 100vw, 1860px"
+            sizes="100vw"
             onLoad={() => setLoaded(true)}
             className={`object-cover transition-opacity duration-300 ease-out ${
               loaded ? "opacity-100" : "opacity-0"

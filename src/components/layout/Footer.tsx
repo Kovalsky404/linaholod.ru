@@ -27,23 +27,26 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
       <div className="container-site">
         <nav
           aria-label="Навигация в подвале"
-          className="flex flex-wrap items-center gap-x-8 gap-y-5 pt-6"
+          className="flex flex-col gap-6 pt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-5"
         >
-          {NAV_LINKS.slice(0, 3).map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-foreground/80 hover:text-foreground text-sm uppercase transition-colors duration-200 ease-out"
-            >
-              {link.label}
-            </a>
-          ))}
+          {/* Разделы: на мобайле — столбцом, на десктопе — в строку */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+            {NAV_LINKS.slice(0, 3).map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-foreground/80 hover:text-foreground text-sm uppercase transition-colors duration-200 ease-out"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
 
-          {/* Справа: pill + соцсети */}
-          <div className="ml-auto flex items-center gap-3 sm:gap-4">
+          {/* Справа: pill + соцсети (компактнее на мобайле) */}
+          <div className="flex items-center gap-3 sm:ml-auto sm:gap-4">
             <a
               href={CTA.href}
-              className="btn-pill px-5 py-2.5 text-sm font-medium"
+              className="btn-pill px-4 py-2 text-xs font-medium sm:px-5 sm:py-2.5 sm:text-sm"
             >
               {CTA.label}
             </a>

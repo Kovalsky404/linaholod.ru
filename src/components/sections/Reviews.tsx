@@ -35,16 +35,16 @@ function Stars({ rating }: { rating: number }) {
  */
 function ReviewCard({ review }: { review: Review }) {
   return (
-    <figure className="border-foreground/10 bg-background flex h-[300px] w-auto max-w-[420px] min-w-[280px] flex-none flex-col justify-between rounded-sm border p-6 sm:p-8">
+    <figure className="border-foreground/10 bg-background flex h-[220px] w-auto max-w-[290px] min-w-[230px] flex-none flex-col justify-between rounded-sm border p-5 sm:h-[300px] sm:max-w-[420px] sm:min-w-[280px] sm:p-8">
       <div>
         <Stars rating={review.rating} />
-        <blockquote className="text-muted mt-4 text-base leading-relaxed sm:text-lg">
+        <blockquote className="text-muted mt-3 text-sm leading-relaxed sm:mt-4 sm:text-lg">
           {review.text}
         </blockquote>
       </div>
 
-      <figcaption className="border-foreground/10 mt-6 border-t pt-4">
-        <cite className="heading-upper text-foreground text-sm font-semibold not-italic">
+      <figcaption className="border-foreground/10 mt-4 border-t pt-3 sm:mt-6 sm:pt-4">
+        <cite className="heading-upper text-foreground text-xs font-semibold not-italic sm:text-sm">
           {review.author}
         </cite>
       </figcaption>
@@ -70,7 +70,7 @@ function MarqueeRow({
   return (
     <div className="w-full overflow-hidden">
       <div
-        className={`marquee items-start gap-6 ${
+        className={`marquee items-start gap-4 sm:gap-6 ${
           direction === "left" ? "marquee--left" : "marquee--right"
         }`}
         style={{ ["--marquee-duration" as string]: duration }}
@@ -79,7 +79,7 @@ function MarqueeRow({
         {[0, 1].map((copy) => (
           <div
             key={copy}
-            className="flex flex-none items-start gap-6 pr-6"
+            className="flex flex-none items-start gap-4 pr-4 sm:gap-6 sm:pr-6"
             aria-hidden={copy === 1}
           >
             {items.map((review) => (

@@ -59,16 +59,21 @@ export function Header() {
   }, [open, close]);
 
   return (
-    <header
-      className={`sticky top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-200 ease-out ${
-        scrolled
-          ? "bg-background/80 border-foreground/10 border-b backdrop-blur-md"
-          : "border-b border-transparent bg-transparent"
-      }`}
-    >
-      {/* Три зоны: лево — центр (логотип) — право. grid-cols-[1fr_auto_1fr]
-          держит логотип строго по центру при любой длине пунктов меню. */}
-      <div className="container-site grid h-16 grid-cols-[1fr_auto_1fr] items-center sm:h-20">
+    // ВАЖНО: на <header> НЕТ backdrop-filter/transform — иначе он стал бы
+    // containing-block для position:fixed мобильного меню (меню «схлопывалось»
+    // и контент просвечивал). Блюр/фон живут на внутренней полосе ниже.
+    <header className="sticky top-0 z-50">
+      {/* Полоса шапки: фон/блюр и нижняя граница появляются после скролла. */}
+      <div
+        className={`transition-[background-color,border-color,backdrop-filter] duration-200 ease-out ${
+          scrolled
+            ? "bg-background/80 border-foreground/10 border-b backdrop-blur-md"
+            : "border-b border-transparent bg-transparent"
+        }`}
+      >
+        {/* Три зоны: лево — центр (логотип) — право. grid-cols-[1fr_auto_1fr]
+            держит логотип строго по центру при любой длине пунктов меню. */}
+        <div className="container-site grid h-14 grid-cols-[1fr_auto_1fr] items-center sm:h-20">
         {/* Левая зона: десктоп — левая группа меню; мобайл — бургер */}
         <div className="flex items-center justify-start">
           {/* Бургер (мобайл/планшет) */}
@@ -103,7 +108,7 @@ export function Header() {
         {/* Центр: логотип */}
         <a
           href="#top"
-          className="heading-upper text-foreground justify-self-center text-2xl font-bold sm:text-3xl"
+          className="heading-upper text-foreground justify-self-center text-xl font-bold sm:text-3xl"
           aria-label={`${BRAND.name} — на главную`}
         >
           {BRAND.name}
@@ -130,13 +135,15 @@ export function Header() {
             {CTA.label}
           </a>
         </div>
+        </div>
       </div>
 
-      {/* Мобильное меню */}
+      {/* Мобильное меню — СИБЛИНГ полосы шапки (не вложено в блюр-контейнер),
+          fixed считается от вьюпорта и перекрывает контент непрозрачным фоном. */}
       <div
         id="mobile-menu"
         aria-hidden={!open}
-        className={`bg-background fixed inset-x-0 top-16 bottom-0 z-40 origin-top transition-[opacity,transform] duration-300 ease-out lg:hidden ${
+        className={`bg-background fixed inset-x-0 top-14 bottom-0 z-40 origin-top transition-[opacity,transform] duration-300 ease-out sm:top-20 lg:hidden ${
           open
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-2 opacity-0"
@@ -144,7 +151,7 @@ export function Header() {
       >
         <nav
           aria-label="Мобильная навигация"
-          className="flex h-full flex-col gap-2 px-5 pt-6 pb-12"
+          className="flex h-full flex-col gap-2 overflow-y-auto px-5 pt-6 pb-12"
         >
           {NAV_LINKS.map((link, i) => (
             <a
