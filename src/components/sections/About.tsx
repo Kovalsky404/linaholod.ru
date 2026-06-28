@@ -152,11 +152,8 @@ export function About({ content }: { content?: AboutContent } = {}) {
               </div>
             </Reveal>
 
-            {/* Две маленькие фото в ряд (низ) */}
-            <Reveal
-              delay={160}
-              className="mt-auto grid grid-cols-2 gap-5 pt-10"
-            >
+            {/* Две маленькие фото в ряд (низ) — компактный отступ от текста */}
+            <Reveal delay={160} className="mt-8 grid grid-cols-2 gap-5">
               <PhotoPlaceholder
                 ratio="1/1"
                 sizes={SMALL_SIZES}
