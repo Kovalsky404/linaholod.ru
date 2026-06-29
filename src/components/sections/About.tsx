@@ -71,7 +71,7 @@ export function About({ content }: { content?: AboutContent } = {}) {
   return (
     <section
       id="about"
-      className="scroll-mt-20 overflow-x-clip py-12 sm:py-28"
+      className="scroll-mt-20 overflow-x-clip py-8 sm:py-28"
       aria-labelledby="about-heading"
     >
       <div className="container-site">

@@ -142,10 +142,10 @@ export function Booking({
   return (
     <section
       id="book"
-      className="scroll-mt-20 pb-12 sm:pb-28"
+      className="scroll-mt-20 pb-8 sm:pb-28"
       aria-labelledby="book-heading"
     >
-      <div className="container-site border-foreground/10 border-t pt-12 sm:pt-28">
+      <div className="container-site border-foreground/10 border-t pt-8 sm:pt-28">
         <Reveal>
           <SectionHeading id="book-heading">Записаться</SectionHeading>
         </Reveal>

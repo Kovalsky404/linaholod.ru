@@ -36,7 +36,7 @@ export function Services({
       className="scroll-mt-20 pb-6"
       aria-labelledby="services-heading"
     >
-      <div className="container-site border-foreground/10 border-t pt-12 sm:pt-28">
+      <div className="container-site border-foreground/10 border-t pt-8 sm:pt-28">
         <Reveal>
           <SectionHeading id="services-heading">Услуги</SectionHeading>
         </Reveal>

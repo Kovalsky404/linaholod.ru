@@ -106,10 +106,10 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
   return (
     <section
       id="portfolio"
-      className="scroll-mt-20 pb-12 sm:pb-28"
+      className="scroll-mt-20 pb-8 sm:pb-28"
       aria-labelledby="portfolio-heading"
     >
-      <div className="container-site border-foreground/10 border-t pt-12 sm:pt-28">
+      <div className="container-site border-foreground/10 border-t pt-8 sm:pt-28">
         {/* Шапка секции: заголовок + (стрелки) + CTA */}
         <Reveal className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
           <SectionHeading id="portfolio-heading">Портфолио</SectionHeading>
