@@ -59,6 +59,14 @@ export const portfolioItem = defineType({
       of: [{ type: "image", options: { hotspot: true } }],
     }),
     defineField({
+      name: "video",
+      title: "Видео (быстрый просмотр)",
+      description:
+        "Необязательно. Короткий клип со съёмки (MP4, желательно 10–30 сек). Показывается ПЕРВЫМ слайдом в окне быстрого просмотра — без звука, зациклено.",
+      type: "file",
+      options: { accept: "video/mp4,video/quicktime,video/*" },
+    }),
+    defineField({
       name: "order",
       title: "Порядок",
       type: "number",

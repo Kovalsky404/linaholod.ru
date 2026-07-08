@@ -36,7 +36,18 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
   const [photoIndex, setPhotoIndex] = useState(0);
 
   const active = activeIndex === null ? null : items[activeIndex];
-  const photoCount = active ? active.gallery.length : 0;
+
+  // Слайды быстрого просмотра: видео (если есть) — первым, затем фото галереи.
+  const slides = active
+    ? [
+        ...(active.video
+          ? [{ kind: "video" as const, src: active.video }]
+          : []),
+        ...active.gallery.map((src) => ({ kind: "image" as const, src })),
+      ]
+    : [];
+  const photoCount = slides.length;
+  const current = slides[photoIndex] ?? slides[0];
 
   /** Открыть работу с первого кадра. */
   const openWork = useCallback((i: number) => {
@@ -216,21 +227,39 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                 (из URL Sanity) → фото видно ЦЕЛИКОМ, без обрезки. На десктопе
                 высота фиксирована (85vh), ширина следует за пропорцией фото. */}
             <div
-              className="bg-placeholder relative w-full shrink-0 md:h-[85vh] md:w-auto"
-              style={{
-                aspectRatio:
-                  aspectFromUrl(active.gallery[photoIndex] ?? "") ?? "3 / 2",
-              }}
+              className={`bg-placeholder relative w-full shrink-0 md:h-[85vh] md:w-auto ${
+                current?.kind === "video"
+                  ? "flex items-center justify-center"
+                  : ""
+              }`}
+              style={
+                current?.kind === "video"
+                  ? undefined
+                  : { aspectRatio: aspectFromUrl(current?.src ?? "") ?? "3 / 2" }
+              }
             >
-              <Image
-                key={photoIndex}
-                src={active.gallery[photoIndex] ?? active.gallery[0]!}
-                alt={`${active.title} — ${active.shoot}, фото ${photoIndex + 1} из ${photoCount}`}
-                fill
-                unoptimized={active.unoptimized}
-                sizes="(max-width: 768px) 100vw, 60vw"
-                className="object-contain"
-              />
+              {current?.kind === "video" ? (
+                <video
+                  key={photoIndex}
+                  src={current.src}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  className="max-h-[70vh] w-auto max-w-full md:max-h-[85vh]"
+                />
+              ) : (
+                <Image
+                  key={photoIndex}
+                  src={current?.src ?? active.cover}
+                  alt={`${active.title} — ${active.shoot}, кадр ${photoIndex + 1} из ${photoCount}`}
+                  fill
+                  unoptimized={active.unoptimized}
+                  sizes="(max-width: 768px) 100vw, 60vw"
+                  className="object-contain"
+                />
+              )}
 
               {photoCount > 1 ? (
                 <>

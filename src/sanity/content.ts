@@ -71,6 +71,7 @@ type RawPortfolio = {
   date?: string;
   coverImage?: SanityImageSource;
   gallery?: SanityImageSource[];
+  video?: string;
 };
 type RawReview = { _id: string; author: string; text: string; rating?: number };
 type RawSettings = {
@@ -133,6 +134,7 @@ export async function getPortfolio(): Promise<PortfolioView[]> {
         date: p.date ?? "",
         cover,
         gallery: gallery.length > 0 ? gallery : [cover],
+        video: p.video || undefined,
         unoptimized: !hasCover,
       };
     });

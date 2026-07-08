@@ -24,6 +24,8 @@ export type PortfolioView = {
   date: string;
   cover: string;
   gallery: readonly string[];
+  /** URL видео-клипа (MP4) — показывается первым слайдом в быстром просмотре. */
+  video?: string;
   unoptimized: boolean;
 };
 

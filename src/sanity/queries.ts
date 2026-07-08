@@ -27,7 +27,9 @@ export const servicesQuery = groq`
 /** Работы портфолио по порядку. */
 export const portfolioQuery = groq`
   *[_type == "portfolioItem"] | order(order asc, _createdAt asc){
-    _id, number, title, shoot, description, date, coverImage, gallery, order
+    _id, number, title, shoot, description, date, coverImage, gallery,
+    "video": video.asset->url,
+    order
   }
 `;
 
