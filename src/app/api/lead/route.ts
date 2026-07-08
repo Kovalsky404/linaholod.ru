@@ -69,38 +69,58 @@ function formatContact(raw: string): string {
   return escapeHtml(value);
 }
 
+/** Шлёт сообщение одному chat_id. true — доставлено. */
+async function sendToChat(
+  token: string,
+  chatId: string,
+  text: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+    if (!res.ok) {
+      console.error(`[lead] Telegram API ответил ${res.status} (chat ${chatId})`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`[lead] Сбой запроса к Telegram (chat ${chatId})`, err);
+    return false;
+  }
+}
+
 async function sendToTelegram(text: string): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) {
+  const raw = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !raw) {
     // Не настроено окружение — логируем на сервере, наружу отдаём 500.
     console.error("[lead] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID не заданы");
     return false;
   }
 
-  try {
-    const res = await fetch(
-      `https://api.telegram.org/bot${token}/sendMessage`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text,
-          parse_mode: "HTML",
-          disable_web_page_preview: true,
-        }),
-      },
-    );
-    if (!res.ok) {
-      console.error("[lead] Telegram API ответил", res.status);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error("[lead] Сбой запроса к Telegram", err);
+  // Можно указать несколько получателей через запятую/пробел/точку с запятой.
+  const chatIds = raw
+    .split(/[\s,;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (chatIds.length === 0) {
+    console.error("[lead] TELEGRAM_CHAT_ID пуст после разбора");
     return false;
   }
+
+  const results = await Promise.all(
+    chatIds.map((chatId) => sendToChat(token, chatId, text)),
+  );
+  // Успех, если заявка доставлена хотя бы одному получателю.
+  return results.some(Boolean);
 }
 
 export async function POST(req: Request) {
