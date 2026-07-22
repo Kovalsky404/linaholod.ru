@@ -15,9 +15,9 @@ export default defineConfig({
     alias: { "@": resolve(__dirname, "src") },
   },
   test: {
-    // forks-пул (дефолт) в Vitest 4.1 иногда роняет одиночный холодный прогон
-    // jsdom-файла ошибкой «failed to find the runner»; threads-пул стабилен.
-    pool: "threads",
+    // forks/threads в Vitest 4.1 периодически роняют прогон ошибкой
+    // «failed to find the runner»; vmThreads стабилен на этом тулчейне.
+    pool: "vmThreads",
     environment: "jsdom",
     globals: true,
     setupFiles: ["./test/setup.ts"],

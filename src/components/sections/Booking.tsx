@@ -119,7 +119,7 @@ export function Booking({
         fields?: LeadErrors;
       };
 
-      if (res.ok && json.ok) {
+      if (json.ok) {
         setStatus("success");
         form.reset();
         setService("");

@@ -11,9 +11,11 @@ import type { ServiceView } from "@/sanity/types";
  * здесь останавливаемся на «клиент шлёт правильный payload и отражает ответ».
  */
 
-// Компонент читает только title/price — минимальная услуга под каст.
+// Компонент читает только title/price — минимальные услуги под каст.
+// Две услуги (три опции с «Не выбрано») — чтобы нав по клавиатуре был осмыслен.
 const services = [
   { title: "Разбор гардероба", price: "5 000 ₽" },
+  { title: "Консультация", price: "10 000 ₽" },
 ] as unknown as ServiceView[];
 
 const OPTION_LABEL = "Разбор гардероба — 5 000 ₽";
@@ -82,6 +84,19 @@ describe("F6 · гейт согласия (152-ФЗ)", () => {
       company: "",
     });
     expect(body).not.toHaveProperty("consent");
+  });
+
+  it("2b. невалидные поля + без согласия → сначала ошибка ПОЛЕЙ, не согласия, без fetch", async () => {
+    const user = userEvent.setup();
+    render(<Booking services={services} />);
+    await user.click(submitBtn()); // всё пусто, согласие не отмечено
+
+    // валидация полей срабатывает ПЕРВОЙ (порядок в onSubmit)
+    expect(await screen.findByText("Укажите имя")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Чтобы отправить заявку, отметьте согласие."),
+    ).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
@@ -245,6 +260,45 @@ describe("F6 · кастомный Select", () => {
       "aria-activedescendant",
     );
   });
+
+  it("12b. aria-activedescendant отслеживает активную опцию + wrap-around", async () => {
+    const user = userEvent.setup();
+    render(<Booking services={services} />);
+    const trigger = screen.getByRole("button", { name: "Услуга" });
+    const listbox = screen.getByRole("listbox");
+    const options = screen.getAllByRole("option"); // Не выбрано, Разбор, Консультация
+    expect(options).toHaveLength(3);
+
+    await user.click(trigger); // открыть; active = 0 (текущее значение "")
+    expect(listbox).toHaveAttribute("aria-activedescendant", options[0]!.id);
+    await user.keyboard("{ArrowDown}");
+    expect(listbox).toHaveAttribute("aria-activedescendant", options[1]!.id);
+    await user.keyboard("{ArrowDown}");
+    expect(listbox).toHaveAttribute("aria-activedescendant", options[2]!.id);
+    await user.keyboard("{ArrowDown}"); // wrap → 0
+    expect(listbox).toHaveAttribute("aria-activedescendant", options[0]!.id);
+  });
+
+  it("12c. Escape закрывает список", async () => {
+    const user = userEvent.setup();
+    render(<Booking services={services} />);
+    const trigger = screen.getByRole("button", { name: "Услуга" });
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await user.keyboard("{Escape}");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("12d. typeahead: буква переводит активную опцию", async () => {
+    const user = userEvent.setup();
+    render(<Booking services={services} />);
+    const trigger = screen.getByRole("button", { name: "Услуга" });
+    const listbox = screen.getByRole("listbox");
+    const options = screen.getAllByRole("option");
+    await user.click(trigger); // active 0
+    await user.keyboard("к"); // «Консультация — …» на «к» → index 2
+    expect(listbox).toHaveAttribute("aria-activedescendant", options[2]!.id);
+  });
 });
 
 // ───────────────────── Ошибочные ответы (нет ложного успеха) ─────────────────────
@@ -286,6 +340,7 @@ describe("F6 · пути ошибок", () => {
 
     expect(await screen.findByText("Серверная ошибка.")).toBeInTheDocument();
     expect(screen.queryByText(/Заявка отправлена/)).not.toBeInTheDocument();
+    expect(nameField()).toHaveValue("Аня"); // форма не сброшена при ошибке
   });
 
   it("14b. клиент доверяет json.ok и ИГНОРИРУЕТ HTTP-статус (res.ok=false + json.ok=true → успех)", async () => {
