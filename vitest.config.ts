@@ -15,6 +15,9 @@ export default defineConfig({
     alias: { "@": resolve(__dirname, "src") },
   },
   test: {
+    // forks-пул (дефолт) в Vitest 4.1 иногда роняет одиночный холодный прогон
+    // jsdom-файла ошибкой «failed to find the runner»; threads-пул стабилен.
+    pool: "threads",
     environment: "jsdom",
     globals: true,
     setupFiles: ["./test/setup.ts"],
