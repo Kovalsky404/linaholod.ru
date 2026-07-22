@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizeLead, validateLead } from "@/lib/lead";
+import { escapeHtml, formatContact } from "@/lib/telegram";
 
 /**
  * POST /api/lead — приём заявки с формы и отправка в Telegram.
@@ -34,39 +35,6 @@ function getIp(req: Request): string {
   const fwd = req.headers.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0]!.trim();
   return req.headers.get("x-real-ip") ?? "unknown";
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-/**
- * Делает контакт кликабельным:
- * - Telegram-логин (@user / user / t.me/user / ссылка) → ссылка на чат + @user;
- * - телефон (цифры, +, скобки, дефисы) → tel:-ссылка с нормализованным номером;
- * - иначе — экранированный текст как есть.
- */
-function formatContact(raw: string): string {
-  const value = raw.trim();
-
-  // Telegram: t.me/user, https://t.me/user, @user
-  const tme = value.match(/(?:https?:\/\/)?(?:t\.me|telegram\.me)\/(\w{3,})/i);
-  if (tme && tme[1]) {
-    const user = tme[1];
-    return `<a href="https://t.me/${user}">@${escapeHtml(user)}</a>`;
-  }
-  if (/^@?[a-zA-Z][\w]{3,31}$/.test(value)) {
-    const user = value.replace(/^@/, "");
-    return `<a href="https://t.me/${user}">@${escapeHtml(user)}</a>`;
-  }
-
-  // Телефон: достаточно цифр, допустимы + ( ) - пробелы
-  const digits = value.replace(/[^\d+]/g, "");
-  if (/^\+?\d{7,15}$/.test(digits) && /^[\d\s+()-]+$/.test(value)) {
-    return `<a href="tel:${digits}">${escapeHtml(value)}</a>`;
-  }
-
-  return escapeHtml(value);
 }
 
 /** Шлёт сообщение одному chat_id. true — доставлено. */
