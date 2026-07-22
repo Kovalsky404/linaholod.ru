@@ -38,14 +38,14 @@ export function resolveImage(
 
 /** Первое число из цены — для JSON-LD (минимальная цена). Устойчиво к
  *  строке/числу/пустому: "10 000 – 35 000 ₽" → 10000, "от 4 000 ₽" → 4000. */
-function parsePrice(price: unknown): number {
+export function parsePrice(price: unknown): number {
   if (typeof price === "number") return price;
   if (typeof price !== "string") return 0;
   const m = price.replace(/\s/g, "").match(/\d+/);
   return m ? Number(m[0]) : 0;
 }
 
-function slugify(value: string): string {
+export function slugify(value: string): string {
   return (
     value
       .toLowerCase()
