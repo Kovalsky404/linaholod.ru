@@ -50,3 +50,8 @@ figma-assets/
 # Client materials (keep brief.md + references tracked, ignore heavy/private)
 _client/assets/
 _client/data/
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
