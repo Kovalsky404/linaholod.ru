@@ -63,8 +63,10 @@ export function Header() {
     // containing-block для position:fixed мобильного меню (меню «схлопывалось»
     // и контент просвечивал). Блюр/фон живут на внутренней полосе ниже.
     <header className="sticky top-0 z-50">
-      {/* Полоса шапки: фон/блюр и нижняя граница появляются после скролла. */}
+      {/* Полоса шапки: фон/блюр и нижняя граница появляются после скролла.
+          data-scrolled — честный сигнал состояния (класс — только визуал). */}
       <div
+        data-scrolled={scrolled}
         className={`transition-[background-color,border-color,backdrop-filter] duration-200 ease-out ${
           scrolled
             ? "bg-background/80 border-foreground/10 border-b backdrop-blur-md"
