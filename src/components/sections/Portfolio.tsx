@@ -151,6 +151,8 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
             {/* На мобайле кнопку убираем отсюда — она ниже, под работами. */}
             <a
               href={CTA.href}
+              target="_blank"
+              rel="noopener noreferrer"
               className="btn-pill hidden px-5 py-2.5 text-sm font-medium sm:inline-flex"
             >
               {CTA.label}
@@ -206,6 +208,8 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
         <Reveal delay={120} className="mt-8 flex justify-center sm:hidden">
           <a
             href={CTA.href}
+            target="_blank"
+            rel="noopener noreferrer"
             className="btn-pill w-fit px-7 py-2.5 text-sm font-medium"
           >
             {CTA.label}
@@ -330,6 +334,8 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
 
               <a
                 href={CTA.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => setActiveIndex(null)}
                 className="btn-pill mt-8 px-6 py-3 text-sm font-medium"
               >

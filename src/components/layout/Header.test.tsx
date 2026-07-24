@@ -136,10 +136,10 @@ describe("F8 · a11y-проводка и контент", () => {
       "#contacts",
     );
     // Меню закрыто → мобильные дубли вне a11y-дерева, поэтому CTA/лого уникальны
-    expect(screen.getByRole("link", { name: "Записаться" })).toHaveAttribute(
-      "href",
-      "#book",
-    );
+    const cta = screen.getByRole("link", { name: "Записаться" });
+    expect(cta).toHaveAttribute("href", "https://t.me/holod_styling"); // внешний чат
+    expect(cta).toHaveAttribute("target", "_blank");
+    expect(cta).toHaveAttribute("rel", expect.stringContaining("noopener"));
     expect(
       screen.getByRole("link", { name: "lina H. — на главную" }),
     ).toHaveAttribute("href", "#top");
@@ -161,7 +161,7 @@ describe("F8 · a11y-проводка и контент", () => {
     );
     expect(M.getByRole("link", { name: "Записаться" })).toHaveAttribute(
       "href",
-      "#book",
+      "https://t.me/holod_styling",
     );
   });
 });

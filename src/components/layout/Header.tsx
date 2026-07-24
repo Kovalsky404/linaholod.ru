@@ -132,6 +132,8 @@ export function Header() {
 
           <a
             href={CTA.href}
+            target="_blank"
+            rel="noopener noreferrer"
             className="btn-pill px-5 py-2.5 text-sm font-medium"
           >
             {CTA.label}
@@ -171,6 +173,8 @@ export function Header() {
 
           <a
             href={CTA.href}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={close}
             className="btn-pill mt-auto w-full px-6 py-4 text-base font-medium"
           >

@@ -89,4 +89,12 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
       "https://t.me/AHL2060",
     );
   });
+
+  it("e. CTA «Записаться» в футере — внешняя ссылка в Telegram", () => {
+    render(<Footer />);
+    const cta = screen.getByRole("link", { name: "Записаться" });
+    expect(cta).toHaveAttribute("href", "https://t.me/holod_styling");
+    expect(cta).toHaveAttribute("target", "_blank");
+    expect(cta).toHaveAttribute("rel", expect.stringContaining("noopener"));
+  });
 });

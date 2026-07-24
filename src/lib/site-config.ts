@@ -19,11 +19,14 @@ export const NAV_LINKS: readonly NavLink[] = [
   { label: "Контакты", href: "#contacts" },
 ] as const;
 
-/** Подпись и якорь кнопки-CTA «Записаться» — ведёт на форму заявки. */
+/** Кнопка-CTA «Записаться» — ведёт в Telegram-чат (внешняя ссылка).
+ *  Формы заявки на сайте нет (не собираем ПД, вне 152-ФЗ). */
 export const CTA = {
   label: "Записаться",
-  href: "#book" as const,
-};
+  href: "https://t.me/holod_styling",
+  /** Внешняя ссылка — открывать в новой вкладке (target=_blank + rel). */
+  external: true,
+} as const;
 
 export type SocialLink = {
   /** Машинный ключ — выбирает иконку в компоненте. */

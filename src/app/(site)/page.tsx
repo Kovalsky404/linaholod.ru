@@ -41,7 +41,7 @@ export default async function Home() {
         }}
       />
       <Reviews reviews={reviews} />
-      <Booking services={services} intro={settings?.bookingIntro} />
+      <Booking intro={settings?.bookingIntro} />
     </>
   );
 }

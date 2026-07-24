@@ -31,15 +31,24 @@ test("5. десктоп-навигация (правая группа): Отзы
   await expect(page.locator("#contacts")).toBeInViewport({ ratio: 0.2 });
 });
 
-test("6. CTA «Записаться» в шапке ведёт к форме", async ({ page }) => {
-  await page
-    .locator("header")
-    .getByRole("link", { name: "Записаться" })
-    .click();
-  await expect(page.locator("#book")).toBeInViewport({ ratio: 0.2 });
+test("6. CTA «Записаться» в шапке — внешняя ссылка в Telegram", async ({
+  page,
+}) => {
+  const cta = page.locator("header").getByRole("link", { name: "Записаться" });
+  await expect(cta).toHaveAttribute("href", "https://t.me/holod_styling");
+  await expect(cta).toHaveAttribute("target", "_blank");
+});
+
+test("8. секция «Записаться» ведёт в Telegram и НЕ содержит формы", async ({
+  page,
+}) => {
+  const section = page.locator("#book");
   await expect(
-    page.getByRole("button", { name: "Отправить заявку" }),
-  ).toBeVisible();
+    section.getByRole("link", { name: /Записаться в Telegram/i }),
+  ).toHaveAttribute("href", "https://t.me/holod_styling");
+  // ПД не собираем: полей ввода/чекбоксов в секции нет
+  await expect(section.getByRole("textbox")).toHaveCount(0);
+  await expect(section.getByRole("checkbox")).toHaveCount(0);
 });
 
 test("7. быстрый просмотр портфолио: открытие → навигация → закрытие", async ({
