@@ -280,7 +280,16 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                   <div
                     key={slide.src}
                     aria-hidden={!isActive}
-                    className={`absolute inset-0 flex items-center justify-center ${fade}`}
+                    data-slide={slide.kind}
+                    data-active={isActive}
+                    // АКТИВНОЕ видео должно быть В ПОТОКЕ: у контейнера в
+                    // видео-режиме нет aspect-ratio, и высоту задаёт именно оно.
+                    // Если сделать его absolute, контейнер схлопнется в 0, а
+                    // видео вылезет поверх текста. Неактивное — absolute, чтобы
+                    // не влиять на раскладку, пока ждёт своей очереди.
+                    className={`flex items-center justify-center ${
+                      isActive ? "relative" : "absolute inset-0"
+                    } ${fade}`}
                   >
                     <video
                       ref={videoRef}

@@ -348,6 +348,25 @@ describe("F7 · гарантии модалки", () => {
     expect(document.body.style.overflow).toBe("");
   });
 
+  it("16b. АКТИВНОЕ видео остаётся в потоке (иначе контейнер схлопнется)", async () => {
+    // Регресс-лок: в видео-режиме у контейнера нет aspect-ratio, высоту задаёт
+    // само видео. Если сделать активную обёртку absolute, контейнер получит
+    // высоту 0, и видео вылезет поверх текста (проявлялось на мобильном).
+    const user = userEvent.setup();
+    render(<Portfolio items={items} />);
+    await openWork(user, "Съёмка с видео");
+
+    const wrapper = dialog().querySelector('[data-slide="video"]')!;
+    expect(wrapper.getAttribute("data-active")).toBe("true");
+    expect(wrapper.className).toContain("relative");
+    expect(wrapper.className).not.toContain("absolute");
+
+    // уходим с видео — теперь оно не должно влиять на раскладку
+    await user.keyboard("{ArrowRight}");
+    expect(wrapper.getAttribute("data-active")).toBe("false");
+    expect(wrapper.className).toContain("absolute");
+  });
+
   it("17. видео-слайд: controls/muted/loop включены", async () => {
     const user = userEvent.setup();
     render(<Portfolio items={items} />);
