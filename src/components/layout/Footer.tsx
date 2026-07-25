@@ -24,9 +24,11 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
 
       {/* Навигационная панель — в контейнере */}
       <div className="container-site">
+        {/* Мобайл: слева столбец разделов, справа — соцсети, под ними широкая
+            кнопка. Десктоп (sm+): всё в одну строку, кнопка перед соцсетями. */}
         <nav
           aria-label="Навигация в подвале"
-          className="flex flex-col gap-6 pt-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-5"
+          className="flex items-start justify-between gap-6 pt-6 sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-5"
         >
           {/* Разделы: на мобайле — столбцом, на десктопе — в строку */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
@@ -41,13 +43,14 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
             ))}
           </div>
 
-          {/* Справа: pill + соцсети (компактнее на мобайле) */}
-          <div className="flex items-center gap-3 sm:ml-auto sm:gap-4">
+          {/* flex-col-reverse: в DOM кнопка перед соцсетями (порядок десктопа),
+              а на мобайле визуально соцсети оказываются сверху. */}
+          <div className="flex flex-1 flex-col-reverse items-end gap-4 sm:ml-auto sm:flex-none sm:flex-row sm:items-center sm:gap-4">
             <a
               href={CTA.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-pill px-4 py-2 text-xs font-medium sm:px-5 sm:py-2.5 sm:text-sm"
+              className="btn-pill w-full px-4 py-2.5 text-center text-xs font-medium sm:w-auto sm:px-5 sm:py-2.5 sm:text-sm"
             >
               {CTA.label}
             </a>
