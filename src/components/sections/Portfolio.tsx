@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CTA } from "@/lib/site-config";
@@ -48,6 +48,32 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
     : [];
   const photoCount = slides.length;
   const current = slides[photoIndex] ?? slides[0];
+
+  // Окно предзагрузки: держим в DOM текущий кадр и обоих соседей (циклично).
+  // Это даёт сразу два эффекта: сосед уже загружен к моменту клика (нет
+  // ожидания) и оба кадра существуют одновременно — значит возможен crossfade.
+  const windowIndices = useMemo(() => {
+    if (photoCount === 0) return new Set<number>();
+    return new Set([
+      photoIndex,
+      (photoIndex - 1 + photoCount) % photoCount,
+      (photoIndex + 1) % photoCount,
+    ]);
+  }, [photoIndex, photoCount]);
+
+  // Видео не должно продолжать играть, пока оно вне экрана (скрыто прозрачностью).
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (current?.kind === "video") {
+      // play() возвращает Promise не везде (старые браузеры, jsdom) — проверяем.
+      const p: unknown = v.play();
+      if (p instanceof Promise) p.catch(() => {});
+    } else {
+      v.pause();
+    }
+  }, [photoIndex, activeIndex, current?.kind]);
 
   /** Открыть работу с первого кадра. */
   const openWork = useCallback((i: number) => {
@@ -231,7 +257,7 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                 (из URL Sanity) → фото видно ЦЕЛИКОМ, без обрезки. На десктопе
                 высота фиксирована (85vh), ширина следует за пропорцией фото. */}
             <div
-              className={`bg-placeholder relative w-full shrink-0 md:h-[85vh] md:w-auto ${
+              className={`bg-placeholder relative w-full shrink-0 transition-[aspect-ratio] duration-300 ease-out md:h-[85vh] md:w-auto ${
                 current?.kind === "video"
                   ? "flex items-center justify-center"
                   : ""
@@ -242,28 +268,48 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                   : { aspectRatio: aspectFromUrl(current?.src ?? "") ?? "3 / 2" }
               }
             >
-              {current?.kind === "video" ? (
-                <video
-                  key={photoIndex}
-                  src={current.src}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  controls
-                  className="max-h-[70vh] w-auto max-w-full md:max-h-[85vh]"
-                />
-              ) : (
-                <Image
-                  key={photoIndex}
-                  src={current?.src ?? active.cover}
-                  alt={`${active.title} — ${active.shoot}, кадр ${photoIndex + 1} из ${photoCount}`}
-                  fill
-                  unoptimized={active.unoptimized}
-                  sizes="(max-width: 768px) 100vw, 60vw"
-                  className="object-contain"
-                />
-              )}
+              {/* Слайды стопкой: активный непрозрачен, соседи ждут наготове с
+                  opacity:0. Переключение = crossfade, без пересоздания <img>. */}
+              {slides.map((slide, i) => {
+                if (!windowIndices.has(i)) return null;
+                const isActive = i === photoIndex;
+                const fade = `transition-opacity duration-300 ease-out ${
+                  isActive ? "opacity-100" : "pointer-events-none opacity-0"
+                }`;
+                return slide.kind === "video" ? (
+                  <div
+                    key={slide.src}
+                    aria-hidden={!isActive}
+                    className={`absolute inset-0 flex items-center justify-center ${fade}`}
+                  >
+                    <video
+                      ref={videoRef}
+                      src={slide.src}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      controls
+                      className="max-h-[70vh] w-auto max-w-full md:max-h-[85vh]"
+                    />
+                  </div>
+                ) : (
+                  <Image
+                    key={slide.src}
+                    src={slide.src}
+                    alt={
+                      isActive
+                        ? `${active.title} — ${active.shoot}, кадр ${photoIndex + 1} из ${photoCount}`
+                        : ""
+                    }
+                    aria-hidden={!isActive}
+                    fill
+                    unoptimized={active.unoptimized}
+                    sizes="(max-width: 768px) 100vw, 60vw"
+                    className={`object-contain ${fade}`}
+                  />
+                );
+              })}
 
               {photoCount > 1 ? (
                 <>

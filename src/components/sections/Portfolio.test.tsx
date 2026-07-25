@@ -61,7 +61,18 @@ afterEach(() => {
 
 const dialog = () => screen.getByRole("dialog");
 const videoEl = () => dialog().querySelector("video");
+/**
+ * Является ли видео АКТИВНЫМ слайдом. Соседние слайды намеренно остаются в DOM
+ * (предзагрузка + crossfade), поэтому «видео в DOM» больше не значит «видно»;
+ * активность видна по aria-hidden на обёртке слайда.
+ */
+const videoIsActive = () =>
+  videoEl()?.closest("[aria-hidden]")?.getAttribute("aria-hidden") === "false";
+/** src активного кадра: getByRole("img") не видит соседей (aria-hidden + alt=""). */
 const imgSrc = () => within(dialog()).getByRole("img").getAttribute("src");
+/** Сколько слайдов реально смонтировано (окно предзагрузки). */
+const mountedMedia = () =>
+  dialog().querySelectorAll("img, video").length;
 const counterText = () => {
   // счётчик «N / M» — единственный узел такого вида в диалоге
   const node = within(dialog())
@@ -131,7 +142,7 @@ describe("F7 · навигация (медиа реально меняется)"
     await openWork(user, "Съёмка с видео");
 
     await user.keyboard("{ArrowRight}");
-    expect(videoEl()).toBeNull(); // видео сменилось картинкой
+    expect(videoIsActive()).toBe(false); // видео больше не активный слайд
     expect(imgSrc()).toBe(withVideo.gallery[0]);
     expect(counterText()).toBe("2 / 3");
   });
@@ -142,14 +153,55 @@ describe("F7 · навигация (медиа реально меняется)"
     await openWork(user, "Съёмка с видео");
 
     await user.keyboard("{ArrowLeft}"); // 0 → last (индекс 2 = imgA2)
-    expect(videoEl()).toBeNull();
+    expect(videoIsActive()).toBe(false);
     expect(imgSrc()).toBe(withVideo.gallery[1]);
     expect(counterText()).toBe("3 / 3");
 
     await user.keyboard("{ArrowRight}"); // last → 0 (видео)
-    expect(videoEl()).not.toBeNull();
+    expect(videoIsActive()).toBe(true);
     expect(videoEl()!.getAttribute("src")).toBe(withVideo.video);
     expect(counterText()).toBe("1 / 3");
+  });
+
+  it("5b. соседние кадры ПРЕДЗАГРУЖЕНЫ (в DOM), но скрыты от скринридера", async () => {
+    // Смысл окна: к моменту клика сосед уже загружен → нет ожидания, и оба
+    // кадра существуют одновременно → возможен crossfade.
+    const user = userEvent.setup();
+    render(<Portfolio items={items} />);
+    await openWork(user, "Съёмка без видео"); // 3 кадра, старт на 0
+
+    // смонтированы кадр 0 (активный) + соседи 1 и 2 (циклично)
+    expect(mountedMedia()).toBe(3);
+    const preloaded = Array.from(dialog().querySelectorAll("img")).map((i) =>
+      i.getAttribute("src"),
+    );
+    expect(new Set(preloaded)).toEqual(new Set(noVideo.gallery));
+
+    // активный ровно один — остальные aria-hidden и потому вне ролей
+    expect(within(dialog()).getAllByRole("img")).toHaveLength(1);
+    expect(imgSrc()).toBe(noVideo.gallery[0]);
+  });
+
+  it("5c. окно ограничено: далёкие кадры НЕ монтируются", async () => {
+    // 5 кадров → в DOM максимум 3 (текущий + два соседа), а не вся галерея.
+    const many: PortfolioView = {
+      ...noVideo,
+      id: "many",
+      title: "Много кадров",
+      gallery: [
+        "https://cdn.x/m1-800x1000.jpg",
+        "https://cdn.x/m2-800x1000.jpg",
+        "https://cdn.x/m3-800x1000.jpg",
+        "https://cdn.x/m4-800x1000.jpg",
+        "https://cdn.x/m5-800x1000.jpg",
+      ],
+    };
+    const user = userEvent.setup();
+    render(<Portfolio items={[many]} />);
+    await openWork(user, "Много кадров");
+
+    expect(mountedMedia()).toBe(3);
+    expect(counterText()).toBe("1 / 5");
   });
 
   it("6. клики по половинам листают (паритет со стрелками)", async () => {
