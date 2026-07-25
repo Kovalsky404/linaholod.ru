@@ -213,6 +213,25 @@ describe("F7 · закрытие", () => {
 
 // ───────────────────── Края и сброс состояния ─────────────────────
 describe("F7 · края и сброс индекса", () => {
+  it("10b. видео без галереи → ровно один слайд, обложка не дублируется", async () => {
+    const videoOnly: PortfolioView = {
+      ...withVideo,
+      id: "vo",
+      title: "Только видео",
+      gallery: [], // галерея пуста — обложка НЕ подставляется (см. content.ts)
+    };
+    const user = userEvent.setup();
+    render(<Portfolio items={[videoOnly]} />);
+    await openWork(user, "Только видео");
+
+    expect(counterText()).toBe("1 / 1");
+    expect(videoEl()).not.toBeNull();
+    expect(within(dialog()).queryByRole("img")).toBeNull(); // нет кадра-обложки
+    expect(
+      within(dialog()).queryByRole("button", { name: "Следующее фото" }),
+    ).toBeNull();
+  });
+
   it("11. один слайд → нет кнопок листания, стрелка no-op", async () => {
     const user = userEvent.setup();
     render(<Portfolio items={items} />);

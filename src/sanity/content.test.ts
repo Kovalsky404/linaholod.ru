@@ -380,11 +380,32 @@ describe("F4 · портфолио: video / gallery / unoptimized", () => {
     expect((await getPortfolio())[0]!.video).toBeUndefined();
   });
 
-  it("S19. пустая галерея → [cover]", async () => {
+  it("S19. пустая галерея БЕЗ видео → [cover] (окно просмотра не пустое)", async () => {
     setFetch([{ ...base, coverImage: { __id: "c" }, gallery: [] }]);
     expect((await getPortfolio())[0]!.gallery).toEqual([img("c", 1400)]);
     setFetch([{ ...base, coverImage: { __id: "c" } }]); // без ключа gallery
     expect((await getPortfolio())[0]!.gallery).toEqual([img("c", 1400)]);
+  });
+
+  it("S19b. пустая галерея С видео → галерея ПУСТА (обложка не дублируется)", async () => {
+    // Видео само по себе заполняет окно просмотра; подстановка обложки дала бы
+    // лишний второй слайд с той же картинкой, что и на карточке.
+    setFetch([
+      {
+        ...base,
+        coverImage: { __id: "c" },
+        gallery: [],
+        video: "https://cdn/v.mp4",
+      },
+    ]);
+    const withEmptyArray = (await getPortfolio())[0]!;
+    expect(withEmptyArray.gallery).toEqual([]);
+    expect(withEmptyArray.video).toBe("https://cdn/v.mp4");
+
+    setFetch([
+      { ...base, coverImage: { __id: "c" }, video: "https://cdn/v.mp4" },
+    ]); // без ключа gallery
+    expect((await getPortfolio())[0]!.gallery).toEqual([]);
   });
 
   it("S20. нет обложки → плейсхолдер+unoptimized, галерея реальная", async () => {

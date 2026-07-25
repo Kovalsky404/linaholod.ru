@@ -120,11 +120,16 @@ export async function getPortfolio(): Promise<PortfolioView[]> {
       const cover = hasCover
         ? resolveImage(p.coverImage, 1400).src
         : PLACEHOLDER;
-      // Галерея быстрого просмотра — без обложки. Если пусто — показываем
-      // обложку, чтобы окно просмотра не было пустым.
+      // Галерея быстрого просмотра — без обложки. Если пусто, подставляем
+      // обложку, чтобы окно просмотра не было пустым — но ТОЛЬКО когда нет
+      // видео: при видео окно и так не пустое, а обложка вторым слайдом
+      // выглядела бы дублем.
+      const hasVideo = Boolean(p.video);
       const gallery = (p.gallery ?? [])
         .map((img) => resolveImage(img, 1600).src)
         .filter(Boolean);
+      const galleryOrFallback =
+        gallery.length > 0 ? gallery : hasVideo ? [] : [cover];
       return {
         id: p._id,
         number: p.number ?? `#${i + 1}`,
@@ -133,7 +138,7 @@ export async function getPortfolio(): Promise<PortfolioView[]> {
         description: p.description ?? "",
         date: p.date ?? "",
         cover,
-        gallery: gallery.length > 0 ? gallery : [cover],
+        gallery: galleryOrFallback,
         video: p.video || undefined,
         unoptimized: !hasCover,
       };
