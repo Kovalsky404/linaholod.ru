@@ -26,8 +26,16 @@ type ModalProps = {
   bare?: boolean;
 };
 
+// video[controls] включён намеренно: Chrome ставит такой плеер в порядок Tab.
+// Без него список трапа расходится с браузерным, и «последним» считался бы не
+// тот элемент — окажись видео в конце панели, Tab уводил бы фокус ИЗ модалки.
 const FOCUSABLE =
-  'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), textarea, input, select, video[controls], [tabindex]:not([tabindex="-1"])';
+
+/** Фокусируемые элементы панели в порядке документа. */
+function focusablesOf(panel: HTMLElement): HTMLElement[] {
+  return Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
+}
 
 /**
  * Доступная модалка.
@@ -68,7 +76,7 @@ export function Modal({
     if (!open) return;
     const panel = panelRef.current;
     if (!panel) return;
-    const first = panel.querySelector<HTMLElement>(FOCUSABLE);
+    const first = focusablesOf(panel)[0];
     (first ?? panel).focus();
   }, [open]);
 
@@ -89,7 +97,7 @@ export function Modal({
 
       const panel = panelRef.current;
       if (!panel) return;
-      const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
+      const items = focusablesOf(panel);
       if (items.length === 0) {
         e.preventDefault();
         panel.focus();

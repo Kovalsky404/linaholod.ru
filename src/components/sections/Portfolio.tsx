@@ -26,6 +26,42 @@ function aspectFromUrl(url: string): string | undefined {
   return `${m[1]} / ${m[2]}`;
 }
 
+/** Числовое W/H из того же URL (для расчёта ширины кадра). */
+function aspectRatioNumber(url: string): number {
+  const m = url.match(/-(\d+)x(\d+)\.\w+/);
+  const w = Number(m?.[1]);
+  const h = Number(m?.[2]);
+  return m && w > 0 && h > 0 ? w / h : 1.5; // фолбэк — 3/2, как у контейнера
+}
+
+/**
+ * sizes для кадра в быстром просмотре.
+ *
+ * На md+ колонка с медиа — `h-[85vh] w-auto`, то есть её ширина равна
+ * 85vh × (W/H) кадра и НЕ зависит от ширины окна. Поэтому любое фиксированное
+ * значение во vw обязательно врёт: 60vw переоценивало на десктопе с портретом,
+ * 40vw недооценивало на планшете (запрашивалась картинка 384px в блок 669px —
+ * видимое растягивание). Выражаем ровно ту же формулу, что и в раскладке.
+ */
+function slideSizes(url: string): string {
+  // 767px, а не 768: Tailwind md: — это min-width:768px, и ровно на 768
+  // подсказка sizes расходилась бы с фактической раскладкой.
+  return `(max-width: 767px) 100vw, calc(85vh * ${aspectRatioNumber(url).toFixed(3)})`;
+}
+
+/**
+ * Состав работы для aria-label карточки: «видео», «N фото» или «видео и N фото».
+ * Видео названо словом, а не приплюсовано к числу, — иначе у видео-работы с
+ * пустой галереей подпись читалась бы как «0 фото» на непустой работе.
+ * (Счётчик в модалке считает иначе — там видео это слайд, поэтому «видео и
+ * 2 фото» соответствует «1 / 3».) «фото» несклоняемо — форма одна для любых чисел.
+ */
+function describeContents(item: PortfolioView): string {
+  const photos = item.gallery.length;
+  if (item.video) return photos > 0 ? `видео и ${photos} фото` : "видео";
+  return `${photos} фото`;
+}
+
 export function Portfolio({ items }: { items: PortfolioView[] }) {
   const trackRef = useRef<HTMLUListElement>(null);
   const [atStart, setAtStart] = useState(true);
@@ -62,6 +98,8 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
   }, [photoIndex, photoCount]);
 
   // Видео не должно продолжать играть, пока оно вне экрана (скрыто прозрачностью).
+  // Слайд с видео в работе не больше одного (см. сборку slides выше), поэтому
+  // одного ref достаточно.
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     const v = videoRef.current;
@@ -73,6 +111,13 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
     } else {
       v.pause();
     }
+    // Пауза при закрытии модалки. Полагаться на ветку выше нельзя: при закрытии
+    // <video> размонтируется, ref обнуляется ДО повторного запуска эффекта, и
+    // `if (!v) return` вышел бы раньше паузы — отцепленный элемент продолжал бы
+    // играть и тянуть данные. Ссылку держим в замыкании.
+    return () => {
+      v.pause();
+    };
   }, [photoIndex, activeIndex, current?.kind]);
 
   /** Открыть работу с первого кадра. */
@@ -125,6 +170,9 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
   useEffect(() => {
     if (activeIndex === null) return;
     const onKey = (e: KeyboardEvent) => {
+      // Если фокус на плеере — не перехватываем: там ←/→ означают перемотку,
+      // и preventDefault лишал бы пользователя штатного управления видео.
+      if ((e.target as HTMLElement | null)?.tagName === "VIDEO") return;
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         prevPhoto();
@@ -202,7 +250,7 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                 <button
                   type="button"
                   onClick={() => openWork(i)}
-                  aria-label={`Открыть работу: ${item.title} (${item.gallery.length} фото)`}
+                  aria-label={`Открыть работу: ${item.title} (${describeContents(item)})`}
                   className="group block w-full text-left"
                 >
                   <figure>
@@ -265,7 +313,9 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
               style={
                 current?.kind === "video"
                   ? undefined
-                  : { aspectRatio: aspectFromUrl(current?.src ?? "") ?? "3 / 2" }
+                  : {
+                      aspectRatio: aspectFromUrl(current?.src ?? "") ?? "3 / 2",
+                    }
               }
             >
               {/* Слайды стопкой: активный непрозрачен, соседи ждут наготове с
@@ -276,10 +326,18 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                 const fade = `transition-opacity duration-300 ease-out ${
                   isActive ? "opacity-100" : "pointer-events-none opacity-0"
                 }`;
+                // Ключ позиционный: галерея в Sanity не гарантирует уникальность
+                // URL, а один и тот же src дважды дал бы коллизию ключей и
+                // «пропавший» слайд. Индекс стабилен — slides строится по порядку.
+                const key = `${i}-${slide.src}`;
                 return slide.kind === "video" ? (
                   <div
-                    key={slide.src}
+                    key={key}
                     aria-hidden={!isActive}
+                    // inert убирает неактивный слайд из tab-порядка: aria-hidden
+                    // и opacity:0 фокус НЕ снимают, и <video controls> иначе
+                    // ловил бы табы внутри aria-hidden (нарушение a11y).
+                    inert={!isActive}
                     data-slide={slide.kind}
                     data-active={isActive}
                     // АКТИВНОЕ видео должно быть В ПОТОКЕ: у контейнера в
@@ -294,17 +352,28 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                     <video
                       ref={videoRef}
                       src={slide.src}
-                      autoPlay
+                      // poster намеренно НЕ ставим: он подменял бы неиграющее
+                      // видео обложкой, из-за чего непроигрываемый файл выглядел
+                      // бы «как задумано», и это было бы единственное прямое
+                      // обращение браузера к cdn.sanity.io мимо оптимизатора.
+                      // Без autoPlay: воспроизведением управляет эффект ниже.
+                      // autoPlay на соседнем (скрытом) слайде заставлял браузер
+                      // тянуть видео как preload="auto". preload — это подсказка
+                      // ВЫБОРА стратегии: она не обрывает уже начавшуюся
+                      // загрузку, но не даёт ей стартовать у слайда, который
+                      // активным ещё не был.
+                      preload={isActive ? "auto" : "none"}
                       muted
                       loop
                       playsInline
-                      controls
+                      controls={isActive}
+                      tabIndex={isActive ? undefined : -1}
                       className="max-h-[70vh] w-auto max-w-full md:max-h-[85vh]"
                     />
                   </div>
                 ) : (
                   <Image
-                    key={slide.src}
+                    key={key}
                     src={slide.src}
                     alt={
                       isActive
@@ -314,7 +383,16 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                     aria-hidden={!isActive}
                     fill
                     unoptimized={active.unoptimized}
-                    sizes="(max-width: 768px) 100vw, 60vw"
+                    // Видимый кадр важнее соседей: без явного приоритета все три
+                    // запроса шли с одинаковым весом и делили канал поровну.
+                    // Именно fetchPriority, без priority/preload: priority в
+                    // Next 16 объявлен устаревшим, а для наложенных стопкой
+                    // картинок дока предписывает ровно fetchPriority
+                    // (node_modules/next/dist/docs/.../image.md, «Good to know»
+                    // в разделе про тему) — preload здесь ещё и плодил бы
+                    // неудаляемые <link rel=preload> в <head>.
+                    fetchPriority={isActive ? "high" : "low"}
+                    sizes={slideSizes(slide.src)}
                     className={`object-contain ${fade}`}
                   />
                 );
@@ -322,13 +400,23 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
 
               {photoCount > 1 ? (
                 <>
-                  {/* Кликабельные половины фото: левая — назад, правая — вперёд.
-                      group/* подсвечивает стрелку-подсказку при наведении. */}
+                  {/* Кликабельные зоны листания: левая — назад, правая — вперёд.
+                      group/* подсвечивает стрелку-подсказку при наведении.
+                      На ВИДЕО-слайде это узкие полосы у краёв, обрезанные снизу
+                      (bottom-16): иначе они накрывали бы панель управления
+                      плеером — и по краям, и по низу, — и мышью до неё было бы
+                      не добраться. Оговорка: попав в родные контролы плеера,
+                      Escape браузер съедает и модалка им уже не закрывается —
+                      выход через Tab до «Закрыть» или клик по фону. */}
                   <button
                     type="button"
                     onClick={prevPhoto}
-                    aria-label="Предыдущее фото"
-                    className="group/prev absolute inset-y-0 left-0 z-10 w-1/2 cursor-pointer focus:outline-none"
+                    aria-label="Предыдущий кадр"
+                    className={`group/prev absolute top-0 left-0 z-10 cursor-pointer focus:outline-none ${
+                      current?.kind === "video"
+                        ? "bottom-16 w-16"
+                        : "bottom-0 w-1/2"
+                    }`}
                   >
                     <span
                       aria-hidden="true"
@@ -340,8 +428,12 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                   <button
                     type="button"
                     onClick={nextPhoto}
-                    aria-label="Следующее фото"
-                    className="group/next absolute inset-y-0 right-0 z-10 w-1/2 cursor-pointer focus:outline-none"
+                    aria-label="Следующий кадр"
+                    className={`group/next absolute top-0 right-0 z-10 cursor-pointer focus:outline-none ${
+                      current?.kind === "video"
+                        ? "bottom-16 w-16"
+                        : "bottom-0 w-1/2"
+                    }`}
                   >
                     <span
                       aria-hidden="true"
@@ -353,13 +445,17 @@ export function Portfolio({ items }: { items: PortfolioView[] }) {
                 </>
               ) : null}
 
-              {/* Индикатор: текущее фото / всего фото в работе */}
-              <div
-                className="bg-foreground/70 text-background pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full px-3 py-1 text-xs tracking-wider"
-                aria-live="polite"
-              >
-                {photoIndex + 1} / {photoCount}
-              </div>
+              {/* Индикатор «текущий / всего» — только когда есть что считать.
+                  При единственном слайде «1 / 1» не несёт информации, а у
+                  видео-работы ещё и ложился на панель управления плеером. */}
+              {photoCount > 1 ? (
+                <div
+                  className="bg-foreground/70 text-background pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full px-3 py-1 text-xs tracking-wider"
+                  aria-live="polite"
+                >
+                  {photoIndex + 1} / {photoCount}
+                </div>
+              ) : null}
             </div>
 
             {/* СПРАВА: метаданные (фикс. ширина на десктопе — панель хугает фото+текст) */}

@@ -54,22 +54,44 @@ test("8. секция «Записаться» ведёт в Telegram и НЕ с
 test("7. быстрый просмотр портфолио: открытие → навигация → закрытие", async ({
   page,
 }) => {
-  await page
-    .getByRole("button", { name: /^Открыть работу:/ })
-    .first()
-    .click();
+  // Берём первую работу, у которой БОЛЬШЕ одного слайда, а число слайдов
+  // выводим из подписи карточки: «N фото» / «видео и N фото» (видео — тоже
+  // слайд). Так проверка детерминирована и не зависит от порядка работ в CMS:
+  // раньше она молча пропускалась, если счётчик не отрисовался, и сломанное
+  // листание прошло бы с зелёным прогоном.
+  const cards = page.getByRole("button", { name: /^Открыть работу:/ });
+  await expect(cards.first()).toBeVisible();
+
+  let card = null;
+  let slides = 0;
+  for (const c of await cards.all()) {
+    const label = (await c.getAttribute("aria-label")) ?? "";
+    const n =
+      Number(label.match(/(\d+) фото/)?.[1] ?? 0) +
+      (label.includes("видео") ? 1 : 0);
+    if (n > 1) {
+      card = c;
+      slides = n;
+      break;
+    }
+  }
+  // Не skip: работа с несколькими кадрами в портфолио есть всегда, и её
+  // исчезновение само по себе — регресс контента, о котором надо узнать.
+  expect(card, "нет ни одной работы с несколькими слайдами").not.toBeNull();
+
+  await card!.click();
 
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveAccessibleName(/— портфолио$/);
 
-  // Навигация слайдов — только если их больше одного (данные могут разниться).
+  // Счётчик обязан быть, и стрелка обязана листать. Сравниваем строкой, а не
+  // new RegExp(`\s`): в шаблонной строке \s схлопывается в 's', и такой
+  // «регексп» тихо перестал бы совпадать с «1 / 11».
   const counter = dialog.getByText(/^\d+\s*\/\s*\d+$/);
-  const total = Number((await counter.textContent())!.split("/")[1]!.trim());
-  if (total > 1) {
-    await page.keyboard.press("ArrowRight");
-    await expect(dialog.getByText(new RegExp(`^2\\s*/\\s*${total}$`))).toBeVisible();
-  }
+  await expect(counter).toHaveText(`1 / ${slides}`);
+  await page.keyboard.press("ArrowRight");
+  await expect(counter).toHaveText(`2 / ${slides}`);
 
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();

@@ -25,10 +25,10 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
       {/* Навигационная панель — в контейнере */}
       <div className="container-site">
         {/* Мобайл: слева столбец разделов, справа — соцсети, под ними широкая
-            кнопка. Десктоп (sm+): всё в одну строку, кнопка перед соцсетями. */}
+            кнопка. Десктоп (sm+): всё в одну строку. */}
         <nav
           aria-label="Навигация в подвале"
-          className="flex items-start justify-between gap-6 pt-6 sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-5"
+          className="flex items-start gap-6 pt-6 sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-5"
         >
           {/* Разделы: на мобайле — столбцом, на десктопе — в строку */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
@@ -43,17 +43,13 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
             ))}
           </div>
 
-          {/* flex-col-reverse: в DOM кнопка перед соцсетями (порядок десктопа),
-              а на мобайле визуально соцсети оказываются сверху. */}
-          <div className="flex flex-1 flex-col-reverse items-end gap-4 sm:ml-auto sm:flex-none sm:flex-row sm:items-center sm:gap-4">
-            <a
-              href={CTA.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-pill w-full px-4 py-2.5 text-center text-xs font-medium sm:w-auto sm:px-5 sm:py-2.5 sm:text-sm"
-            >
-              {CTA.label}
-            </a>
+          {/* Порядок «соцсети → кнопка» ОДИН И ТОТ ЖЕ в DOM и визуально на обоих
+              брейкпоинтах: на мобайле сверху вниз, на десктопе слева направо.
+              Никаких reverse/order: любой из них рассинхронизировал бы порядок
+              обхода с Tab и порядок озвучки скринридером с тем, что видно
+              (WCAG 2.4.3 / 1.3.2). Кнопка идёт последней — как завершающее
+              действие блока. */}
+          <div className="flex flex-1 flex-col items-end gap-4 sm:ml-auto sm:flex-none sm:flex-row sm:items-center sm:gap-4">
             <ul className="flex items-center gap-2 sm:gap-2.5">
               {socialLinks.map((social) => (
                 <li key={social.key}>
@@ -61,6 +57,17 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
                 </li>
               ))}
             </ul>
+            <a
+              href={CTA.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              // max-w-[16rem]: на мобайле кнопка тянется по ширине колонки, но у
+              // самой границы sm (≈639px) без ограничения превращалась бы в
+              // непропорционально длинную полосу (~480px).
+              className="btn-pill w-full max-w-[16rem] px-4 py-2.5 text-center text-xs font-medium sm:w-auto sm:max-w-none sm:px-5 sm:py-2.5 sm:text-sm"
+            >
+              {CTA.label}
+            </a>
           </div>
         </nav>
       </div>
