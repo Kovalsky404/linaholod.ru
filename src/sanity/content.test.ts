@@ -80,10 +80,21 @@ describe("F4 · дуальный путь: фолбэк при null", () => {
       })),
     );
     // независимые литералы (не только пересказ трансформа)
-    expect(r.length).toBe(3);
-    expect(r[0]!.slug).toBe("personal-shopping");
+    expect(r.length).toBe(SERVICES.length);
+    expect(r[0]!.slug).toBe("wardrobe"); // slug наш, от контента CMS не зависит
     expect(r[0]!.image.unoptimized).toBe(true);
-    expect(r[2]!.priceValue).toBe(15000);
+  });
+
+  it("S3b. в фолбэке priceValue согласован с price у КАЖДОЙ услуги", () => {
+    // Реальный риск при ручной правке src/lib/services.ts: поменяли строку
+    // цены, забыли число. Внешне сайт верен, а в разметке для поисковиков
+    // остаётся старая минимальная цена — и это не роняет больше ничего.
+    for (const s of SERVICES) {
+      expect(s.priceValue, `${s.title}: «${s.price}»`).toBe(
+        parsePrice(s.price),
+      );
+      expect(s.priceValue).toBeGreaterThan(0);
+    }
   });
 
   it("S4. getPortfolio(null) → фолбэк src/lib (cover/gallery-split)", async () => {
@@ -360,7 +371,7 @@ describe("F4 · контракт null / undefined / []", () => {
       })),
     );
     setFetch(undefined);
-    expect((await getServices()).length).toBe(3);
+    expect((await getServices()).length).toBe(SERVICES.length);
     // spot-check на другой коллекции
     setFetch([]);
     expect((await getReviews()).length).toBe(10);

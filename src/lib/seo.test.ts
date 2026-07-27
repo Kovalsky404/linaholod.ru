@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildJsonLd, SITE_URL } from "./seo";
+import { SERVICES } from "@/lib/services";
 
 /**
  * F5 — SEO/JSON-LD (src/lib/seo.ts). Тонкий модуль: константы + buildJsonLd.
@@ -10,27 +11,23 @@ import { buildJsonLd, SITE_URL } from "./seo";
  * чтобы своп name/alternateName и т.п. краснел.
  */
 
-// Ожидаемый каталог по статическим SERVICES (src/lib/services.ts).
-const DEFAULT_OFFERS = [
-  {
-    "@type": "Offer",
-    itemOffered: { "@type": "Service", name: "Персональный шопинг" },
-    price: 20000,
-    priceCurrency: "RUB",
-  },
-  {
-    "@type": "Offer",
-    itemOffered: { "@type": "Service", name: "Консультация" },
-    price: 10000,
-    priceCurrency: "RUB",
-  },
-  {
-    "@type": "Offer",
-    itemOffered: { "@type": "Service", name: "Разбор гардероба" },
-    price: 15000,
-    priceCurrency: "RUB",
-  },
-];
+/**
+ * Ожидаемый каталог. Форма офера расписана здесь ЯВНО (не берётся из кода) —
+ * именно она и проверяется: имена полей, вложенность itemOffered, цена
+ * числом, валюта, порядок. Перепутанные местами title и priceValue такую
+ * проверку уронят.
+ *
+ * А вот СОДЕРЖИМОЕ берётся из SERVICES, а не переписывается литералами.
+ * Фолбэк повторяет каталог услуг из Studio и меняется вместе с ним; литералы
+ * заставляли бы править этот файл после каждой правки прайса у клиента, и
+ * падение выглядело бы как поломка SEO, хотя SEO при этом исправен.
+ */
+const DEFAULT_OFFERS = SERVICES.map((s) => ({
+  "@type": "Offer",
+  itemOffered: { "@type": "Service", name: s.title },
+  price: s.priceValue,
+  priceCurrency: "RUB",
+}));
 
 // sameAs: порядок соцссылок сохранён (см. SOCIAL_LINKS).
 const DEFAULT_SAMEAS = [
@@ -41,7 +38,9 @@ const DEFAULT_SAMEAS = [
 describe("buildJsonLd · дефолтный каталог", () => {
   it("1. offers маппятся поэлементно (count + содержимое + порядок)", () => {
     const ld = buildJsonLd();
-    expect(ld.hasOfferCatalog.itemListElement).toHaveLength(3);
+    // Все услуги, а не подмножество: обрезка каталога — молчаливая потеря.
+    expect(ld.hasOfferCatalog.itemListElement).toHaveLength(SERVICES.length);
+    expect(SERVICES.length).toBeGreaterThan(0);
     expect(ld.hasOfferCatalog.itemListElement).toEqual(DEFAULT_OFFERS);
     expect(ld.hasOfferCatalog["@type"]).toBe("OfferCatalog");
     expect(ld.hasOfferCatalog.name).toBe("Услуги стилиста");
@@ -53,8 +52,8 @@ describe("buildJsonLd · дефолтный каталог", () => {
       expect(typeof o.price).toBe("number");
       expect(o.priceCurrency).toBe("RUB");
     }
-    expect(offers[0]!.price).toBe(20000);
-    // ⚠️ conformance-флаг: schema.org каноничен со СТРОКОВОЙ ценой ("20000").
+    expect(offers[0]!.price).toBe(SERVICES[0]!.priceValue);
+    // ⚠️ conformance-флаг: schema.org каноничен со СТРОКОВОЙ ценой ("10000").
     // Код эмитит число — пришпиливаем текущее поведение, помечаем как gap.
   });
 
