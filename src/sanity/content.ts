@@ -99,7 +99,6 @@ type RawReview = { _id: string; author: string; text: string; rating?: number };
 type RawSettings = {
   telegram?: string;
   instagram?: string;
-  whatsapp?: string;
   phone?: string;
   email?: string;
   heroImage?: SanityImageSource;
@@ -213,7 +212,6 @@ export async function getSiteSettings(): Promise<SiteSettingsView | null> {
   return {
     telegram: raw.telegram,
     instagram: raw.instagram,
-    whatsapp: raw.whatsapp,
     phone: raw.phone,
     email: raw.email,
     // Hero тянется во всю ширину контейнера (до 1604 CSS-px), значит на retina

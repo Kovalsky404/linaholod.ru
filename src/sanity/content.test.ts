@@ -216,7 +216,6 @@ describe("F4 · путь с данными: маппинг", () => {
     setFetch({
       telegram: "tg",
       instagram: "ig",
-      whatsapp: "wa",
       phone: "p",
       email: "e",
       heroImage: { __id: "h" },
@@ -232,7 +231,6 @@ describe("F4 · путь с данными: маппинг", () => {
     expect(r).toEqual({
       telegram: "tg",
       instagram: "ig",
-      whatsapp: "wa",
       phone: "p",
       email: "e",
       // 3200 — это размер ИСХОДНИКА для оптимизатора Next, с запасом на

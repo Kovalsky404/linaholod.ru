@@ -2,9 +2,7 @@ import { BRAND, CTA, NAV_LINKS, SOCIAL_LINKS } from "@/lib/site-config";
 import { SocialIcon } from "@/components/ui/SocialIcon";
 
 /** Переопределения ссылок соцсетей из Sanity (по ключу). */
-type SocialOverrides = Partial<
-  Record<"telegram" | "instagram" | "whatsapp", string>
->;
+type SocialOverrides = Partial<Record<"telegram" | "instagram", string>>;
 
 /**
  * Футер: панель меню + соцсети поверх гигантской надписи «lina H».
@@ -61,10 +59,10 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
               href={CTA.href}
               target="_blank"
               rel="noopener noreferrer"
-              // max-w-[16rem]: на мобайле кнопка тянется по ширине колонки, но у
-              // самой границы sm (≈639px) без ограничения превращалась бы в
-              // непропорционально длинную полосу (~480px).
-              className="btn-pill w-full max-w-[16rem] px-4 py-2.5 text-center text-xs font-medium sm:w-auto sm:max-w-none sm:px-5 sm:py-2.5 sm:text-sm"
+              // Ширина по содержимому на обоих брейкпоинтах. Раньше на мобайле
+              // стояло w-full max-w-[16rem]: кнопка растягивалась до 256px при
+              // тексте примерно вдвое короче и выглядела пустой полосой.
+              className="btn-pill px-6 py-2.5 text-center text-xs font-medium sm:px-5 sm:text-sm"
             >
               {CTA.label}
             </a>

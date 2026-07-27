@@ -62,7 +62,7 @@ export default async function SiteLayout({
 
   // JSON-LD из Sanity (услуги + соцссылки) с фолбэком внутри buildJsonLd.
   const sameAs = settings
-    ? [settings.telegram, settings.instagram, settings.whatsapp].filter(
+    ? [settings.telegram, settings.instagram].filter(
         (u): u is string => Boolean(u) && u !== "#",
       )
     : undefined;
@@ -90,7 +90,6 @@ export default async function SiteLayout({
             ? {
                 telegram: settings.telegram,
                 instagram: settings.instagram,
-                whatsapp: settings.whatsapp,
               }
             : undefined
         }

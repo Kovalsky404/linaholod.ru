@@ -30,16 +30,13 @@ export const CTA = {
 
 export type SocialLink = {
   /** Машинный ключ — выбирает иконку в компоненте. */
-  key: "telegram" | "instagram" | "whatsapp";
+  key: "telegram" | "instagram";
   /** Доступное имя для aria-label. */
   label: string;
   href: string;
 };
 
-/**
- * Соцсети. Telegram и Instagram — реальные ссылки из брифа.
- * WhatsApp — заглушка, заменить на wa.me/<номер> когда клиент даст номер.
- */
+/** Соцсети — реальные ссылки из брифа. */
 export const SOCIAL_LINKS: readonly SocialLink[] = [
   {
     key: "telegram",
@@ -50,12 +47,6 @@ export const SOCIAL_LINKS: readonly SocialLink[] = [
     key: "instagram",
     label: "Instagram",
     href: "https://www.instagram.com/_bulochka__s__makom_/",
-  },
-  {
-    key: "whatsapp",
-    label: "WhatsApp",
-    // TODO: заменить на реальный номер — https://wa.me/<phone>
-    href: "#",
   },
 ] as const;
 

@@ -30,12 +30,9 @@ export const siteSettings = defineType({
       type: "url",
       group: "social",
     }),
-    defineField({
-      name: "whatsapp",
-      title: "WhatsApp (ссылка)",
-      type: "url",
-      group: "social",
-    }),
+    // Поле whatsapp удалено: WhatsApp убран с сайта целиком. Ранее
+    // сохранённое значение остаётся в датасете — оно просто больше не
+    // читается и не редактируется, так что возврат обратим.
     defineField({
       name: "phone",
       title: "Телефон",

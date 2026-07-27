@@ -8,7 +8,7 @@ import { groq } from "next-sanity";
 /** Singleton настроек сайта. */
 export const siteSettingsQuery = groq`
   *[_type == "siteSettings"][0]{
-    telegram, instagram, whatsapp, phone, email,
+    telegram, instagram, phone, email,
     heroImage,
     aboutTitle, aboutText, aboutGallery,
     whyMeTitle, whyMeText, whyMeImage,

@@ -33,7 +33,6 @@ export type PortfolioView = {
 export type SiteSettingsView = {
   telegram?: string;
   instagram?: string;
-  whatsapp?: string;
   phone?: string;
   email?: string;
   heroImage?: ResolvedImage;

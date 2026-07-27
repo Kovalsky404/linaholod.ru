@@ -32,7 +32,7 @@ const DEFAULT_OFFERS = [
   },
 ];
 
-// sameAs: WhatsApp "#" отфильтрован, порядок сохранён (см. SOCIAL_LINKS).
+// sameAs: порядок соцссылок сохранён (см. SOCIAL_LINKS).
 const DEFAULT_SAMEAS = [
   "https://t.me/AHL2060",
   "https://www.instagram.com/_bulochka__s__makom_/",
@@ -115,7 +115,13 @@ describe("buildJsonLd · сериализуемость", () => {
   it("10. round-trip JSON и отсутствие undefined в обязательных ключах", () => {
     for (const ld of [buildJsonLd(), buildJsonLd({ services: [] })]) {
       expect(JSON.parse(JSON.stringify(ld))).toEqual(ld);
-      for (const key of ["@context", "@type", "name", "url", "hasOfferCatalog"]) {
+      for (const key of [
+        "@context",
+        "@type",
+        "name",
+        "url",
+        "hasOfferCatalog",
+      ]) {
         expect((ld as Record<string, unknown>)[key]).toBeDefined();
       }
     }

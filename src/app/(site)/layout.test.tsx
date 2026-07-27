@@ -73,12 +73,14 @@ function jsonLdOf(container: HTMLElement) {
 }
 
 describe("F13 · JSON-LD sameAs — фильтр и фолбэк", () => {
-  it("L1. плейсхолдер '#' (whatsapp) исключён из sameAs", async () => {
+  it("L1. плейсхолдер '#' исключён из sameAs, реальная ссылка рядом остаётся", async () => {
+    // Раньше '#' приходил из поля whatsapp; после его удаления заглушку может
+    // принести любое соц-поле из Studio, и фильтр обязан её отсечь — иначе в
+    // разметке для поисковиков окажется ссылка «в никуда».
     mockData({
       settings: {
         telegram: "https://t.me/realaccount",
-        instagram: "https://instagram.com/realaccount",
-        whatsapp: "#",
+        instagram: "#",
       },
     });
     const { container } = await renderLayout();
@@ -86,7 +88,6 @@ describe("F13 · JSON-LD sameAs — фильтр и фолбэк", () => {
     const sameAs = jsonLdOf(container).sameAs as string[];
     expect(sameAs).not.toContain("#");
     expect(sameAs).toContain("https://t.me/realaccount");
-    expect(sameAs).toContain("https://instagram.com/realaccount");
   });
 
   it("L2. частичный sameAs (одна реальная ссылка) уважается — НЕ мержится со статическим фолбэком", async () => {
@@ -94,7 +95,6 @@ describe("F13 · JSON-LD sameAs — фильтр и фолбэк", () => {
       settings: {
         telegram: "https://t.me/realaccount",
         instagram: "",
-        whatsapp: "#",
       },
     });
     const { container } = await renderLayout();
@@ -114,7 +114,7 @@ describe("F13 · JSON-LD sameAs — фильтр и фолбэк", () => {
     // Truthy settings-объект (НЕ null) — иначе тест дублирует L3 и не
     // проверяет реальную ветку: filter([]) → guard length>0 → undefined.
     mockData({
-      settings: { telegram: "", instagram: "", whatsapp: "#" },
+      settings: { telegram: "", instagram: "#" },
     });
     const { container } = await renderLayout();
 
@@ -155,7 +155,6 @@ describe("F13 · шов layout → Footer", () => {
       settings: {
         telegram: "https://t.me/realaccount",
         instagram: "",
-        whatsapp: "#",
       },
     });
     const { container } = await renderLayout();

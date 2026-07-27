@@ -22,10 +22,6 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
       "href",
       "https://www.instagram.com/_bulochka__s__makom_/",
     );
-    expect(screen.getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
-      "href",
-      "#",
-    );
 
     rerender(<Footer social={undefined} />);
     expect(screen.getByRole("link", { name: "Telegram" })).toHaveAttribute(
@@ -34,13 +30,12 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
     );
   });
 
-  it("b. полный override — все три ключа побеждают дефолт", () => {
+  it("b. полный override — оба ключа побеждают дефолт", () => {
     render(
       <Footer
         social={{
           telegram: "https://t.me/realaccount",
           instagram: "https://instagram.com/realaccount",
-          whatsapp: "https://wa.me/79990000000",
         }}
       />,
     );
@@ -51,34 +46,20 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
     expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
       "href",
       "https://instagram.com/realaccount",
-    );
-    expect(screen.getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
-      "href",
-      "https://wa.me/79990000000",
     );
   });
 
-  it("c. поключевой override — whatsapp остаётся дефолтным, пока telegram/instagram уже реальные", () => {
-    render(
-      <Footer
-        social={{
-          telegram: "https://t.me/realaccount",
-          instagram: "https://instagram.com/realaccount",
-        }}
-      />,
-    );
+  it("c. поключевой override — instagram остаётся дефолтным, пока telegram уже реальный", () => {
+    render(<Footer social={{ telegram: "https://t.me/realaccount" }} />);
     expect(screen.getByRole("link", { name: "Telegram" })).toHaveAttribute(
       "href",
       "https://t.me/realaccount",
     );
+    // Не all-or-nothing: override для instagram отсутствует → остаётся дефолт
+    // из site-config, а не пустота и не адрес соседнего ключа.
     expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
       "href",
-      "https://instagram.com/realaccount",
-    );
-    // Не all-or-nothing: whatsapp override отсутствует → дефолт-заглушка "#".
-    expect(screen.getByRole("link", { name: "WhatsApp" })).toHaveAttribute(
-      "href",
-      "#",
+      "https://www.instagram.com/_bulochka__s__makom_/",
     );
   });
 
@@ -98,10 +79,8 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
     const { container } = render(<Footer />);
     const links = Array.from(container.querySelectorAll("a"))
       .map((a) => a.getAttribute("aria-label") ?? a.textContent?.trim() ?? "")
-      .filter((t) =>
-        ["Telegram", "Instagram", "WhatsApp", "Записаться"].includes(t),
-      );
-    expect(links).toEqual(["Telegram", "Instagram", "WhatsApp", "Записаться"]);
+      .filter((t) => ["Telegram", "Instagram", "Записаться"].includes(t));
+    expect(links).toEqual(["Telegram", "Instagram", "Записаться"]);
 
     // Якорь по РОЛИ, а не по href: ссылка на Telegram в соцсетях настраивается
     // из Sanity и может совпасть с адресом CTA — тогда querySelector нашёл бы
