@@ -44,24 +44,23 @@ const PLACEHOLDER = "/images/placeholder.svg";
 // каждый вызывающий, и что src протянулся во view-объект.
 const urlForImpl = (src: { __id?: string }) => ({
   width: (w: number) => ({
-    auto: () => ({
-      url: () => img(src?.__id ?? "x", w),
+    // Обе ветки отдают РАЗНЫЕ URL — иначе тест не отличил бы «auto=format
+    // применён» от «не применён», и защита от двойного сжатия была бы пустой.
+    auto: () => ({ url: () => imgDoubleCompressed(src?.__id ?? "x", w) }),
+    fit: (f: string) => ({
+      url: () => `mock://img?src=${src?.__id ?? "x"}&w=${w}&fit=${f}`,
     }),
-    // Ветка без .auto() — вызывающий с { raw: true }. Отдаём ОТЛИЧАЮЩИЙСЯ URL,
-    // иначе тест не смог бы отличить «auto=format применён» от «не применён».
-    // fit обязателен в цепочке: без него Sanity апскейлит мелкий исходник.
-    fit: (f: string) => ({ url: () => img(src?.__id ?? "x", w, true, f) }),
   }),
 });
-const img = (id: string, w: number, raw = false, fit?: string) =>
-  `mock://img?src=${id}&w=${w}${fit ? `&fit=${fit}` : ""}${raw ? "" : "&auto=format"}`;
+const img = (id: string, w: number) => `mock://img?src=${id}&w=${w}&fit=max`;
+/** URL, каким он был бы с auto=format — для проверки, что его БОЛЬШЕ НЕТ. */
+const imgDoubleCompressed = (id: string, w: number) =>
+  `mock://img?src=${id}&w=${w}&auto=format`;
 
 // Хелперы установки моков (обходим генерик-типы sanityFetch/urlFor).
 const setFetch = (v: unknown) => fetchMock.mockResolvedValue(v as never);
-const RI = (s: unknown, w?: number, opts?: { raw?: boolean }) =>
-  w === undefined
-    ? resolveImage(s as never)
-    : resolveImage(s as never, w, opts);
+const RI = (s: unknown, w?: number) =>
+  w === undefined ? resolveImage(s as never) : resolveImage(s as never, w);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -133,7 +132,7 @@ describe("F4 · дуальный путь: фолбэк при null", () => {
 
 // ───────────────────────── P0 · маппинг данных ─────────────────────────
 describe("F4 · путь с данными: маппинг", () => {
-  it("S7. getServices(rich) — slug/priceValue/дефолты/ширина 900", async () => {
+  it("S7. getServices(rich) — slug/priceValue/дефолты/ширина 2000", async () => {
     setFetch([
       {
         _id: "s1",
@@ -152,7 +151,7 @@ describe("F4 · путь с данными: маппинг", () => {
         price: "20 000 ₽",
         priceValue: 20000,
         description: "d",
-        image: { src: img("img1", 900), unoptimized: false },
+        image: { src: img("img1", 2000), unoptimized: false },
       },
       {
         slug: "consultation",
@@ -166,7 +165,7 @@ describe("F4 · путь с данными: маппинг", () => {
     expect(fetchMock).toHaveBeenCalledWith(servicesQuery);
   });
 
-  it("S8. getPortfolio(rich) — cover 1400 / gallery 1600 / video / cover исключён", async () => {
+  it("S8. getPortfolio(rich) — cover 1400 / gallery 2400 / video / cover исключён", async () => {
     setFetch([
       {
         _id: "p1",
@@ -190,7 +189,7 @@ describe("F4 · путь с данными: маппинг", () => {
         description: "D",
         date: "2026",
         cover: img("c", 1400),
-        gallery: [img("g1", 1600), img("g2", 1600)],
+        gallery: [img("g1", 2400), img("g2", 2400)],
         video: "https://cdn/v.mp4",
         unoptimized: false,
       },
@@ -211,7 +210,7 @@ describe("F4 · путь с данными: маппинг", () => {
     expect(fetchMock).toHaveBeenCalledWith(reviewsQuery);
   });
 
-  it("S10. getSiteSettings(rich) — ВСЕ поля + hero 3200 raw / whyMe 1000", async () => {
+  it("S10. getSiteSettings(rich) — ВСЕ поля + hero 3200 / whyMe 2000", async () => {
     // Полный toEqual ловит любую перепутанную/потерянную проводку скаляров
     // и обе ширины изображений (asymmetry «missing → undefined» — в S17).
     setFetch({
@@ -236,16 +235,14 @@ describe("F4 · путь с данными: маппинг", () => {
       whatsapp: "wa",
       phone: "p",
       email: "e",
-      // 3200, а не ширина блока: это размер ИСХОДНИКА для оптимизатора Next,
-      // с запасом на retina. И raw — без auto=format, чтобы кадр не сжимался
-      // дважды (Sanity → WebP, затем Next). Обе величины влияют на резкость
-      // hero напрямую, поэтому пришпилены здесь.
-      heroImage: { src: img("h", 3200, true, "max"), unoptimized: false },
+      // 3200 — это размер ИСХОДНИКА для оптимизатора Next, с запасом на
+      // retina, а не ширина блока. Влияет на резкость hero напрямую.
+      heroImage: { src: img("h", 3200), unoptimized: false },
       aboutTitle: "AT",
       aboutText: "Atext",
       whyMeTitle: "WT",
       whyMeText: "Wtext",
-      whyMeImage: { src: img("w", 1000), unoptimized: false },
+      whyMeImage: { src: img("w", 2000), unoptimized: false },
       servicesTerms: "terms",
       bookingIntro: "intro",
     });
@@ -266,15 +263,15 @@ describe("F4 · resolveImage (реальная фн, стаб билдера)", 
     });
   });
 
-  it("S11b. raw:true убирает auto=format, по умолчанию он остаётся", () => {
-    // Регресс-лок на двойное сжатие: если raw перестанет доходить до билдера,
-    // Sanity снова отдаст свой WebP, Next пережмёт его повторно, и hero
-    // поплывёт — визуально, но молча.
-    expect(RI({ __id: "x" }, 3200, { raw: true }).src).toBe(
-      img("x", 3200, true, "max"), // fit=max — запрет апскейла мелкого исходника
-    );
-    expect(RI({ __id: "x" }, 3200).src).toBe(img("x", 3200));
-    expect(RI({ __id: "x" }, 3200, {}).src).toBe(img("x", 3200));
+  it("S11b. URL всегда с fit=max и НИКОГДА с auto=format", () => {
+    // Регресс-лок на две причины мыльности, обе молчаливые:
+    // auto=format вернул бы двойное сжатие (Sanity → WebP, затем Next),
+    // потеря fit=max вернула бы апскейл мелкого исходника до запрошенной
+    // ширины. Ни то ни другое не роняет ни один другой тест.
+    const src = RI({ __id: "x" }, 3200).src;
+    expect(src).toContain("&fit=max");
+    expect(src).not.toContain("auto=format");
+    expect(src).not.toBe(imgDoubleCompressed("x", 3200));
   });
 
   it("S12. falsy источник → плейсхолдер, urlFor НЕ вызван", () => {
@@ -433,7 +430,7 @@ describe("F4 · портфолио: video / gallery / unoptimized", () => {
     const item = (await getPortfolio())[0]!;
     expect(item.cover).toBe(PLACEHOLDER);
     expect(item.unoptimized).toBe(true);
-    expect(item.gallery).toEqual([img("g1", 1600)]);
+    expect(item.gallery).toEqual([img("g1", 2400)]);
   });
 
   it("S21. number по умолчанию — по индексу #${i+1}", async () => {

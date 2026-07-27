@@ -30,25 +30,27 @@ const PLACEHOLDER = "/images/placeholder.svg";
  * поплывёт. Поэтому width должен покрывать самый крупный показ с запасом
  * на retina (ширина блока в CSS-пикселях × 2).
  *
- * `raw: true` отключает `auto=format`. Sanity тогда отдаёт исходный JPEG, а не
- * свой WebP, — и сжатие происходит РОВНО ОДИН раз, в Next. С `auto=format`
- * кадр жмётся дважды (Sanity → WebP, затем Next → AVIF/WebP), и вторая
- * итерация давит уже испорченные артефактами пиксели.
+ * Два параметра URL держат резкость и меняться не должны:
+ *
+ * `fit=max` — запрет апскейла. Без него Sanity растягивает кадр до
+ * запрошенной ширины, если исходник мельче (замерено: исходник 3004px при
+ * запросе 3200 вернулся как 3200px — 6.5% пустых пикселей и лишний вес без
+ * единой новой детали).
+ *
+ * Отсутствие `auto=format` — запрет двойного сжатия. С ним Sanity отдаёт свой
+ * WebP, который Next пережимает повторно: вторая итерация давит уже
+ * испорченные артефактами пиксели. Без него Sanity отдаёт исходный JPEG, и
+ * сжатие происходит РОВНО ОДИН раз — в Next, который здесь единственный
+ * оптимизатор (unoptimized всегда false для реальных картинок).
  */
 export function resolveImage(
   source: SanityImageSource | undefined | null,
   width = 1200,
-  opts: { raw?: boolean } = {},
 ): ResolvedImage {
   if (!source) return { src: PLACEHOLDER, unoptimized: true };
   try {
-    const b = urlFor(source).width(width);
     return {
-      // fit=max в raw-ветке: без него Sanity РАСТЯГИВАЕТ кадр до запрошенной
-      // ширины, если исходник меньше (замерено: 3004px исходник → 3200px ответ,
-      // +6.5% пустых пикселей и лишний вес без единой новой детали). fit=max
-      // отдаёт настоящий размер, когда исходник мельче запроса.
-      src: (opts.raw ? b.fit("max") : b.auto("format")).url(),
+      src: urlFor(source).width(width).fit("max").url(),
       unoptimized: false,
     };
   } catch {
@@ -122,7 +124,10 @@ export async function getServices(): Promise<ServiceView[]> {
       price: s.price,
       priceValue: parsePrice(s.price),
       description: s.description ?? "",
-      image: resolveImage(s.image, 900),
+      // 2000, а не 900: в модалке картинка занимает 45vw (на 1920 это 864
+      // CSS-px, то есть 1728 на retina), в карточке — 37vw. Прежние 900
+      // браузер растягивал почти вдвое.
+      image: resolveImage(s.image, 2000),
     }));
   }
   return SERVICES.map((s) => ({
@@ -138,7 +143,9 @@ export async function getPortfolio(): Promise<PortfolioView[]> {
     return raw.map((p, i) => {
       const hasCover = Boolean(p.coverImage);
       const cover = hasCover
-        ? resolveImage(p.coverImage, 1400).src
+        ? // 1400 достаточно: обложка занимает 24vw (на 2560 это 614 CSS-px,
+          // 1229 на retina). Увеличивать незачем — карточек в ленте много.
+          resolveImage(p.coverImage, 1400).src
         : PLACEHOLDER;
       // Галерея быстрого просмотра — без обложки. Если пусто, подставляем
       // обложку, чтобы окно просмотра не было пустым — но ТОЛЬКО когда нет
@@ -146,7 +153,10 @@ export async function getPortfolio(): Promise<PortfolioView[]> {
       // выглядела бы дублем.
       const hasVideo = Boolean(p.video);
       const gallery = (p.gallery ?? [])
-        .map((img) => resolveImage(img, 1600).src)
+        // 2400: в быстром просмотре кадр — 85vh в высоту, и на экране 4K
+        // это 1224 CSS-px по ширине для портрета, то есть 2448 на retina.
+        // 1600 не хватало уже на 2560×1440.
+        .map((img) => resolveImage(img, 2400).src)
         .filter(Boolean);
       const galleryOrFallback =
         gallery.length > 0 ? gallery : hasVideo ? [] : [cover];
@@ -209,14 +219,13 @@ export async function getSiteSettings(): Promise<SiteSettingsView | null> {
     // ему нужно ~3200 реальных пикселей. Прежние 1860 браузер растягивал в
     // 1.7 раза — отсюда была видимая мыльность. Sanity не апскейлит: если
     // исходник меньше, вернётся его настоящий размер.
-    heroImage: raw.heroImage
-      ? resolveImage(raw.heroImage, 3200, { raw: true })
-      : undefined,
+    heroImage: raw.heroImage ? resolveImage(raw.heroImage, 3200) : undefined,
     aboutTitle: raw.aboutTitle,
     aboutText: raw.aboutText,
     whyMeTitle: raw.whyMeTitle,
     whyMeText: raw.whyMeText,
-    whyMeImage: raw.whyMeImage ? resolveImage(raw.whyMeImage, 1000) : undefined,
+    // 2000: блок занимает 41vw (на 1920 это 787 CSS-px, 1574 на retina).
+    whyMeImage: raw.whyMeImage ? resolveImage(raw.whyMeImage, 2000) : undefined,
     servicesTerms: raw.servicesTerms,
     bookingIntro: raw.bookingIntro,
   };
