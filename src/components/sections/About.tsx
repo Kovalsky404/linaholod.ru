@@ -1,17 +1,35 @@
 import Image from "next/image";
 import { Reveal } from "@/components/ui/Reveal";
+import type { ResolvedImage } from "@/sanity/types";
 
-/** Один фото-плейсхолдер (next/image, заглушка #D9D9D9). */
-function PhotoPlaceholder({
+const PLACEHOLDER = "/images/placeholder.svg";
+
+/**
+ * Слот коллажа: фотография из Sanity, а пока её нет — серая заглушка.
+ *
+ * Индексы совпадают с описанием поля aboutGallery в Studio, чтобы порядок
+ * перетаскивания в CMS был предсказуем и его можно было объяснить словами.
+ */
+const SLOT = {
+  LEFT_TOP_1: 0,
+  LEFT_TOP_2: 1,
+  CENTER_BIG: 2,
+  RIGHT_BOTTOM_1: 3,
+  RIGHT_BOTTOM_2: 4,
+} as const;
+
+function Photo({
   ratio,
   alt,
   className = "",
   sizes,
+  image,
 }: {
   ratio: string;
   alt: string;
   className?: string;
   sizes: string;
+  image?: ResolvedImage;
 }) {
   return (
     <div
@@ -19,11 +37,13 @@ function PhotoPlaceholder({
       style={{ aspectRatio: ratio }}
     >
       <Image
-        src="/images/placeholder.svg"
-        alt={alt}
+        src={image?.src ?? PLACEHOLDER}
+        // У заглушки alt пустой: описывать серый прямоугольник как фотографию
+        // Лины — прямая дезинформация для скринридера.
+        alt={image ? alt : ""}
         fill
         loading="lazy"
-        unoptimized
+        unoptimized={image?.unoptimized ?? true}
         sizes={sizes}
         className="object-cover"
       />
@@ -64,7 +84,15 @@ function paragraphs(text: string): string[] {
     .filter(Boolean);
 }
 
-export function About({ content }: { content?: AboutContent } = {}) {
+export function About({
+  content,
+  gallery,
+}: { content?: AboutContent; gallery?: ResolvedImage[] } = {}) {
+  // Десктопный и мобильный блоки рендерят ОДИН И ТОТ ЖЕ набор кадров, просто
+  // в разной раскладке. Дублирования запросов это не вызывает: скрытая через
+  // display:none половина не имеет бокса, а loading="lazy" не грузит то, что
+  // не приближается к вьюпорту.
+  const slot = (i: number) => gallery?.[i];
   const name = content?.name || "лина холод";
   const text = content?.text || ABOUT_FALLBACK_TEXT;
   const aboutParts = paragraphs(text);
@@ -99,14 +127,16 @@ export function About({ content }: { content?: AboutContent } = {}) {
           <div className="flex flex-col">
             {/* Две маленькие фото в ряд */}
             <Reveal delay={140} className="grid grid-cols-2 gap-5">
-              <PhotoPlaceholder
+              <Photo
                 ratio="1/1"
                 sizes={SMALL_SIZES}
+                image={slot(SLOT.LEFT_TOP_1)}
                 alt="Лина Холод — образ из работ, фото 1"
               />
-              <PhotoPlaceholder
+              <Photo
                 ratio="1/1"
                 sizes={SMALL_SIZES}
+                image={slot(SLOT.LEFT_TOP_2)}
                 alt="Лина Холод — образ из работ, фото 2"
               />
             </Reveal>
@@ -129,9 +159,10 @@ export function About({ content }: { content?: AboutContent } = {}) {
 
           {/* ── ЦЕНТР: одно большое квадратное фото ── */}
           <Reveal delay={120}>
-            <PhotoPlaceholder
+            <Photo
               ratio="1/1"
               sizes={BIG_SIZES}
+              image={slot(SLOT.CENTER_BIG)}
               alt="Лина Холод — крупный образ"
             />
           </Reveal>
@@ -157,14 +188,16 @@ export function About({ content }: { content?: AboutContent } = {}) {
               delay={160}
               className="mt-auto grid grid-cols-2 gap-5 pt-10"
             >
-              <PhotoPlaceholder
+              <Photo
                 ratio="1/1"
                 sizes={SMALL_SIZES}
+                image={slot(SLOT.RIGHT_BOTTOM_1)}
                 alt="Лина Холод — деталь образа, фото 1"
               />
-              <PhotoPlaceholder
+              <Photo
                 ratio="1/1"
                 sizes={SMALL_SIZES}
+                image={slot(SLOT.RIGHT_BOTTOM_2)}
                 alt="Лина Холод — деталь образа, фото 2"
               />
             </Reveal>
@@ -205,32 +238,37 @@ export function About({ content }: { content?: AboutContent } = {}) {
           </Reveal>
 
           <Reveal delay={120}>
-            <PhotoPlaceholder
+            <Photo
               ratio="1/1"
               sizes="92vw"
+              image={slot(SLOT.CENTER_BIG)}
               alt="Лина Холод — крупный образ"
             />
           </Reveal>
 
           <Reveal delay={160} className="grid grid-cols-2 gap-5">
-            <PhotoPlaceholder
+            <Photo
               ratio="1/1"
               sizes="45vw"
+              image={slot(SLOT.LEFT_TOP_1)}
               alt="Лина Холод — образ из работ, фото 1"
             />
-            <PhotoPlaceholder
+            <Photo
               ratio="1/1"
               sizes="45vw"
+              image={slot(SLOT.LEFT_TOP_2)}
               alt="Лина Холод — образ из работ, фото 2"
             />
-            <PhotoPlaceholder
+            <Photo
               ratio="1/1"
               sizes="45vw"
+              image={slot(SLOT.RIGHT_BOTTOM_1)}
               alt="Лина Холод — деталь образа, фото 1"
             />
-            <PhotoPlaceholder
+            <Photo
               ratio="1/1"
               sizes="45vw"
+              image={slot(SLOT.RIGHT_BOTTOM_2)}
               alt="Лина Холод — деталь образа, фото 2"
             />
           </Reveal>

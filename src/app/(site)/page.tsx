@@ -30,7 +30,10 @@ export default async function Home() {
   return (
     <>
       <Hero image={settings?.heroImage} />
-      <About content={{ text: settings?.aboutText }} />
+      <About
+        content={{ text: settings?.aboutText }}
+        gallery={settings?.aboutGallery}
+      />
       <Portfolio items={portfolio} />
       <Services services={services} terms={settings?.servicesTerms} />
       <WhyMe

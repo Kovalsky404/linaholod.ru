@@ -39,6 +39,8 @@ export type SiteSettingsView = {
   heroImage?: ResolvedImage;
   aboutTitle?: string;
   aboutText?: string;
+  /** Коллаж «Обо мне»: ровно 5 слотов, порядок = порядок в Studio. */
+  aboutGallery?: ResolvedImage[];
   whyMeTitle?: string;
   whyMeText?: string;
   whyMeImage?: ResolvedImage;

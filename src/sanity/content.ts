@@ -105,6 +105,7 @@ type RawSettings = {
   heroImage?: SanityImageSource;
   aboutTitle?: string;
   aboutText?: string;
+  aboutGallery?: SanityImageSource[];
   whyMeTitle?: string;
   whyMeText?: string;
   whyMeImage?: SanityImageSource;
@@ -222,6 +223,11 @@ export async function getSiteSettings(): Promise<SiteSettingsView | null> {
     heroImage: raw.heroImage ? resolveImage(raw.heroImage, 3200) : undefined,
     aboutTitle: raw.aboutTitle,
     aboutText: raw.aboutText,
+    // 1400: самый крупный слот коллажа — 32vw (на 1920 это 614 CSS-px, то
+    // есть 1228 на retina). Мелкие слоты по 15vw довольствуются меньшим, но
+    // порядок задаётся в Studio и слот для кадра заранее неизвестен —
+    // запрашиваем по самому крупному.
+    aboutGallery: raw.aboutGallery?.map((i) => resolveImage(i, 1400)),
     whyMeTitle: raw.whyMeTitle,
     whyMeText: raw.whyMeText,
     // 2000: блок занимает 41vw (на 1920 это 787 CSS-px, 1574 на retina).

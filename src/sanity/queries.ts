@@ -10,7 +10,7 @@ export const siteSettingsQuery = groq`
   *[_type == "siteSettings"][0]{
     telegram, instagram, whatsapp, phone, email,
     heroImage,
-    aboutTitle, aboutText,
+    aboutTitle, aboutText, aboutGallery,
     whyMeTitle, whyMeText, whyMeImage,
     servicesTerms,
     bookingIntro
