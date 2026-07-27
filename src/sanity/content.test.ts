@@ -47,16 +47,21 @@ const urlForImpl = (src: { __id?: string }) => ({
     auto: () => ({
       url: () => img(src?.__id ?? "x", w),
     }),
+    // Ветка без .auto() — вызывающий с { raw: true }. Отдаём ОТЛИЧАЮЩИЙСЯ URL,
+    // иначе тест не смог бы отличить «auto=format применён» от «не применён».
+    // fit обязателен в цепочке: без него Sanity апскейлит мелкий исходник.
+    fit: (f: string) => ({ url: () => img(src?.__id ?? "x", w, true, f) }),
   }),
 });
-const img = (id: string, w: number) => `mock://img?src=${id}&w=${w}&auto=format`;
+const img = (id: string, w: number, raw = false, fit?: string) =>
+  `mock://img?src=${id}&w=${w}${fit ? `&fit=${fit}` : ""}${raw ? "" : "&auto=format"}`;
 
 // Хелперы установки моков (обходим генерик-типы sanityFetch/urlFor).
 const setFetch = (v: unknown) => fetchMock.mockResolvedValue(v as never);
-const RI = (s: unknown, w?: number) =>
+const RI = (s: unknown, w?: number, opts?: { raw?: boolean }) =>
   w === undefined
     ? resolveImage(s as never)
-    : resolveImage(s as never, w);
+    : resolveImage(s as never, w, opts);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -206,7 +211,7 @@ describe("F4 · путь с данными: маппинг", () => {
     expect(fetchMock).toHaveBeenCalledWith(reviewsQuery);
   });
 
-  it("S10. getSiteSettings(rich) — ВСЕ поля + hero 1860 / whyMe 1000", async () => {
+  it("S10. getSiteSettings(rich) — ВСЕ поля + hero 3200 raw / whyMe 1000", async () => {
     // Полный toEqual ловит любую перепутанную/потерянную проводку скаляров
     // и обе ширины изображений (asymmetry «missing → undefined» — в S17).
     setFetch({
@@ -231,7 +236,11 @@ describe("F4 · путь с данными: маппинг", () => {
       whatsapp: "wa",
       phone: "p",
       email: "e",
-      heroImage: { src: img("h", 1860), unoptimized: false },
+      // 3200, а не ширина блока: это размер ИСХОДНИКА для оптимизатора Next,
+      // с запасом на retina. И raw — без auto=format, чтобы кадр не сжимался
+      // дважды (Sanity → WebP, затем Next). Обе величины влияют на резкость
+      // hero напрямую, поэтому пришпилены здесь.
+      heroImage: { src: img("h", 3200, true, "max"), unoptimized: false },
       aboutTitle: "AT",
       aboutText: "Atext",
       whyMeTitle: "WT",
@@ -255,6 +264,17 @@ describe("F4 · resolveImage (реальная фн, стаб билдера)", 
       src: img("y", 1200), // дефолтная ширина
       unoptimized: false,
     });
+  });
+
+  it("S11b. raw:true убирает auto=format, по умолчанию он остаётся", () => {
+    // Регресс-лок на двойное сжатие: если raw перестанет доходить до билдера,
+    // Sanity снова отдаст свой WebP, Next пережмёт его повторно, и hero
+    // поплывёт — визуально, но молча.
+    expect(RI({ __id: "x" }, 3200, { raw: true }).src).toBe(
+      img("x", 3200, true, "max"), // fit=max — запрет апскейла мелкого исходника
+    );
+    expect(RI({ __id: "x" }, 3200).src).toBe(img("x", 3200));
+    expect(RI({ __id: "x" }, 3200, {}).src).toBe(img("x", 3200));
   });
 
   it("S12. falsy источник → плейсхолдер, urlFor НЕ вызван", () => {

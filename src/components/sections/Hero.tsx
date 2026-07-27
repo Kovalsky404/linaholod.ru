@@ -24,9 +24,15 @@ export function Hero({ image }: { image?: ResolvedImage } = {}) {
             src={src}
             alt=""
             fill
-            priority
+            // preload, а не priority: в Next 16 priority объявлен устаревшим
+            // именно в пользу preload. Hero — LCP-элемент, грузим его из <head>.
+            preload
+            quality={90}
             unoptimized={unoptimized}
-            sizes="100vw"
+            // Реальная ширина блока, а не 100vw: контейнер ограничен 1700px и
+            // имеет боковые отступы (sm:px-8 → 64px, lg:px-12 → 96px). С «100vw»
+            // браузер на широком экране считал блок больше, чем он есть.
+            sizes="(max-width: 639px) 100vw, (max-width: 1023px) calc(100vw - 64px), (max-width: 1699px) calc(100vw - 96px), 1604px"
             onLoad={() => setLoaded(true)}
             className={`object-cover transition-opacity duration-300 ease-out ${
               loaded ? "opacity-100" : "opacity-0"

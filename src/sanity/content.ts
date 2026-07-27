@@ -21,14 +21,34 @@ import { REVIEWS, type Review } from "@/lib/reviews";
 
 const PLACEHOLDER = "/images/placeholder.svg";
 
+/**
+ * URL картинки из Sanity для next/image.
+ *
+ * `width` — это НЕ размер на экране, а размер ИСХОДНИКА, который получит
+ * оптимизатор Next. Он никогда не апскейлит: если попросить у него 3840px,
+ * а исходник 1860px, вернётся 1860px, и браузер растянет их сам — картинка
+ * поплывёт. Поэтому width должен покрывать самый крупный показ с запасом
+ * на retina (ширина блока в CSS-пикселях × 2).
+ *
+ * `raw: true` отключает `auto=format`. Sanity тогда отдаёт исходный JPEG, а не
+ * свой WebP, — и сжатие происходит РОВНО ОДИН раз, в Next. С `auto=format`
+ * кадр жмётся дважды (Sanity → WebP, затем Next → AVIF/WebP), и вторая
+ * итерация давит уже испорченные артефактами пиксели.
+ */
 export function resolveImage(
   source: SanityImageSource | undefined | null,
   width = 1200,
+  opts: { raw?: boolean } = {},
 ): ResolvedImage {
   if (!source) return { src: PLACEHOLDER, unoptimized: true };
   try {
+    const b = urlFor(source).width(width);
     return {
-      src: urlFor(source).width(width).auto("format").url(),
+      // fit=max в raw-ветке: без него Sanity РАСТЯГИВАЕТ кадр до запрошенной
+      // ширины, если исходник меньше (замерено: 3004px исходник → 3200px ответ,
+      // +6.5% пустых пикселей и лишний вес без единой новой детали). fit=max
+      // отдаёт настоящий размер, когда исходник мельче запроса.
+      src: (opts.raw ? b.fit("max") : b.auto("format")).url(),
       unoptimized: false,
     };
   } catch {
@@ -185,7 +205,13 @@ export async function getSiteSettings(): Promise<SiteSettingsView | null> {
     whatsapp: raw.whatsapp,
     phone: raw.phone,
     email: raw.email,
-    heroImage: raw.heroImage ? resolveImage(raw.heroImage, 1860) : undefined,
+    // Hero тянется во всю ширину контейнера (до 1604 CSS-px), значит на retina
+    // ему нужно ~3200 реальных пикселей. Прежние 1860 браузер растягивал в
+    // 1.7 раза — отсюда была видимая мыльность. Sanity не апскейлит: если
+    // исходник меньше, вернётся его настоящий размер.
+    heroImage: raw.heroImage
+      ? resolveImage(raw.heroImage, 3200, { raw: true })
+      : undefined,
     aboutTitle: raw.aboutTitle,
     aboutText: raw.aboutText,
     whyMeTitle: raw.whyMeTitle,
