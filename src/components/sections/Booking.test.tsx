@@ -30,7 +30,9 @@ describe("Секция «Записаться» → Telegram (без формы)
     expect(
       screen.getByText("Кастомное приглашение из Sanity"),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Напишите мне в Telegram/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Напишите мне в Telegram/),
+    ).not.toBeInTheDocument();
   });
 
   it("3. кнопка «Записаться» ведёт в Telegram (внешняя, новая вкладка)", () => {
@@ -46,17 +48,20 @@ describe("Секция «Записаться» → Telegram (без формы)
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument(); // никаких submit/select
-    expect(screen.queryByText(/согласие на обработку/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/согласие на обработку/i),
+    ).not.toBeInTheDocument();
   });
 
-  it("5. соцсети — внешние ссылки (Telegram/Instagram)", () => {
+  it("5. соцсетей в секции НЕТ — единственная ссылка ведёт в чат", () => {
+    // Блок «Я в сетях» убран намеренно: соцсети остались в футере, а рядом
+    // с целевым действием они уводили в сторону. Проверяем не отсутствие
+    // текста, а то, что ссылка в секции ровно одна — иначе вернувшийся
+    // блок с другой подписью проскочил бы незамеченным.
     render(<Booking />);
-    const tg = screen.getByRole("link", { name: "Telegram" });
-    expect(tg).toHaveAttribute("target", "_blank");
-    expect(tg).toHaveAttribute("href", expect.stringContaining("t.me"));
-    expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
-      "target",
-      "_blank",
-    );
+    expect(screen.queryByText(/я в сетях/i)).not.toBeInTheDocument();
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "https://t.me/holod_styling");
   });
 });

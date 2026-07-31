@@ -1,4 +1,4 @@
-import { CTA, SOCIAL_LINKS } from "@/lib/site-config";
+import { CTA } from "@/lib/site-config";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -25,8 +25,9 @@ const STEPS = [
  * Секция «Записаться» (id="book").
  *
  * Формы заявки НЕТ: сайт не собирает персональные данные (вне 152-ФЗ).
- * Слева — приглашение, шаги записи и соцсети; справа — карточка с кнопкой,
- * ведущей в Telegram-чат. Server-компонент (интерактива нет).
+ * Слева — приглашение и шаги записи; справа — карточка с кнопкой, ведущей
+ * в Telegram-чат. Соцсети из секции убраны: они есть в футере, и дублировать
+ * их рядом с единственным целевым действием значило уводить от него. Server-компонент (интерактива нет).
  * intro — приглашение (из Sanity bookingIntro, иначе дефолт).
  */
 export function Booking({ intro }: { intro?: string } = {}) {
@@ -42,7 +43,7 @@ export function Booking({ intro }: { intro?: string } = {}) {
         </Reveal>
 
         <div className="mt-8 grid gap-10 lg:mt-14 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
-          {/* ЛЕВО: приглашение, шаги, контакты */}
+          {/* ЛЕВО: приглашение и шаги */}
           <Reveal className="flex flex-col">
             <p className="text-muted max-w-prose text-lg leading-relaxed sm:text-xl">
               {intro ??
@@ -72,22 +73,6 @@ export function Booking({ intro }: { intro?: string } = {}) {
                 </li>
               ))}
             </ol>
-
-            {/* Соцсети */}
-            <div className="border-foreground/10 mt-auto flex flex-wrap items-center gap-x-6 gap-y-2 border-t pt-6">
-              <span className="text-gray text-sm uppercase">Я в сетях:</span>
-              {SOCIAL_LINKS.filter((s) => s.href && s.href !== "#").map((s) => (
-                <a
-                  key={s.key}
-                  href={s.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-foreground/80 hover:text-foreground text-sm uppercase transition-colors duration-200 ease-out"
-                >
-                  {s.label}
-                </a>
-              ))}
-            </div>
           </Reveal>
 
           {/* ПРАВО: карточка с кнопкой в Telegram (вместо формы) */}
@@ -97,8 +82,8 @@ export function Booking({ intro }: { intro?: string } = {}) {
                 Записаться на консультацию
               </p>
               <p className="text-muted mx-auto max-w-prose text-base leading-relaxed sm:text-lg">
-                Все заявки — в Telegram. Напишите мне в чат: расскажите о задаче,
-                и я отвечу лично.
+                Все заявки — в Telegram. Напишите мне в чат: расскажите о
+                задаче, и я отвечу лично.
               </p>
               <a
                 href={CTA.href}
