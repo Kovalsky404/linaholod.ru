@@ -104,20 +104,14 @@
     line-height: 1;
   }
 
-  /* Бегущие ленты отзывов (marquee). Лента содержит контент ДВАЖДЫ и едет
-     на -50% (влево) или с -50% к 0 (вправо) — переход бесшовный.
-     На hover пауза; при reduced-motion анимация отключается (см. media ниже). */
-  .marquee {
-    display: flex;
-    width: max-content;
-    flex-wrap: nowrap;
-    will-change: transform;
+  /* Полоса прокрутки у лент отзывов скрыта: движение и так видно, а системный
+     скроллбар ломал бы минималистичную сетку. Прокрутка при этом рабочая —
+     пальцем, колесом и с клавиатуры (контейнер фокусируемый). */
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
   }
-  .marquee--left {
-    animation: marquee-left var(--marquee-duration, 60s) linear infinite;
-  }
-  .marquee--right {
-    animation: marquee-right var(--marquee-duration, 60s) linear infinite;
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* WebKit/Blink */
   }
 
   /* Pill button — 2px border, fully rounded, matches "Записаться" /
@@ -141,25 +135,10 @@
   }
 }
 
-/* Marquee keyframes — контент продублирован, поэтому 50% = ровно один набор. */
-@keyframes marquee-left {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-@keyframes marquee-right {
-  from {
-    transform: translateX(-50%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-/* Respect users who prefer reduced motion — disable all transitions. */
+/* Respect users who prefer reduced motion — disable all transitions.
+   Ленты отзывов сюда не попадают: их движение — не CSS-анимация, а изменение
+   scrollLeft из JS, поэтому AutoScroller проверяет эту media-query сам.
+   Ручная прокрутка при reduced-motion остаётся доступной. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

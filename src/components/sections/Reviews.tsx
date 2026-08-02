@@ -1,6 +1,7 @@
 import { Star } from "lucide-react";
 import type { Review } from "@/lib/reviews";
 import { Reveal } from "@/components/ui/Reveal";
+import { AutoScroller } from "@/components/ui/AutoScroller";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /** Чёрно-белые звёзды оценки: заполненные = rating, остальные — контур. */
@@ -53,29 +54,29 @@ function ReviewCard({ review }: { review: Review }) {
 }
 
 /**
- * Одна бегущая лента (marquee). Контент дублируется (aria-hidden на копии),
- * трек едет влево/вправо бесшовно и НЕ останавливается на hover. Останавливается
- * только при reduced-motion (глобальная media-query). Полоса — на всю ширину,
- * обёртка overflow-hidden, поэтому горизонтального скролла страницы нет.
+ * Одна лента отзывов. Едет сама и прокручивается руками — обе силы двигают
+ * scrollLeft, поэтому не конфликтуют (см. AutoScroller). На hover не
+ * останавливается: пауза наступает только от реального действия
+ * пользователя.
+ *
+ * Контент продублирован — ровно два набора, на чём и держится бесшовная
+ * петля в AutoScroller. Дубль скрыт от скринридера: озвучивать одни и те же
+ * отзывы дважды незачем.
  */
-function MarqueeRow({
+function ReviewsRow({
   items,
   direction,
   duration,
+  label,
 }: {
   items: readonly Review[];
   direction: "left" | "right";
-  duration: string;
+  duration: number;
+  label: string;
 }) {
   return (
-    <div className="w-full overflow-hidden">
-      <div
-        className={`marquee items-start gap-4 sm:gap-6 ${
-          direction === "left" ? "marquee--left" : "marquee--right"
-        }`}
-        style={{ ["--marquee-duration" as string]: duration }}
-      >
-        {/* Оригинал + дубль для бесшовного цикла */}
+    <AutoScroller duration={duration} direction={direction} label={label}>
+      <div className="flex w-max items-start gap-4 sm:gap-6">
         {[0, 1].map((copy) => (
           <div
             key={copy}
@@ -88,7 +89,7 @@ function MarqueeRow({
           </div>
         ))}
       </div>
-    </div>
+    </AutoScroller>
   );
 }
 
@@ -96,8 +97,9 @@ function MarqueeRow({
  * Секция «Отзывы» (id="reviews").
  *
  * Заголовок [ ОТЗЫВЫ ] — в контейнере 1700px, общая светлая стилистика сайта.
- * Ниже — две бесконечные бегущие ленты: верхняя едет вправо, нижняя влево
- * (дорогое статусное движение). Цитаты — blockquote/cite, без нумерации.
+ * Ниже — две бесконечные ленты: верхняя едет вправо, нижняя влево (дорогое
+ * статусное движение). Обе можно прокрутить самому — пальцем, колесом или с
+ * клавиатуры. Цитаты — blockquote/cite, без нумерации.
  */
 export function Reviews({ reviews }: { reviews: Review[] }) {
   const half = Math.ceil(reviews.length / 2);
@@ -123,8 +125,18 @@ export function Reviews({ reviews }: { reviews: Review[] }) {
         delay={80}
         className="mt-8 flex flex-col gap-8 sm:gap-16 lg:mt-16"
       >
-        <MarqueeRow items={rowTop} direction="right" duration="55s" />
-        <MarqueeRow items={rowBottom} direction="left" duration="65s" />
+        <ReviewsRow
+          items={rowTop}
+          direction="right"
+          duration={55}
+          label="Отзывы клиентов, лента 1 — можно прокрутить"
+        />
+        <ReviewsRow
+          items={rowBottom}
+          direction="left"
+          duration={65}
+          label="Отзывы клиентов, лента 2 — можно прокрутить"
+        />
       </Reveal>
     </section>
   );

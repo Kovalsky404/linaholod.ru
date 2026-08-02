@@ -24,6 +24,17 @@ if (typeof window !== "undefined") {
     Element.prototype.scrollIntoView = vi.fn();
   }
 
+  // ResizeObserver в jsdom отсутствует, а AutoScroller меряет им ленту.
+  // Стаб ничего не вызывает: в jsdom нет раскладки, мерить всё равно нечего.
+  if (typeof globalThis.ResizeObserver === "undefined") {
+    class ROStub implements ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    globalThis.ResizeObserver = ROStub as unknown as typeof ResizeObserver;
+  }
+
   // IntersectionObserver в jsdom отсутствует. Стаб сразу «показывает» элемент
   // (isIntersecting:true), чтобы Reveal-контент был видим детерминированно.
   if (typeof globalThis.IntersectionObserver === "undefined") {
