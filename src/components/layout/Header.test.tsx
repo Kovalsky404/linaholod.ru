@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Header } from "./Header";
-import { NAV_LINKS } from "@/lib/site-config";
+import { CERTIFICATES_LABEL, NAV_LINKS, RENT } from "@/lib/site-config";
 
 /**
  * F8 — шапка + мобильное меню (RTL, jsdom).
@@ -135,6 +135,14 @@ describe("F8 · a11y-проводка и контент", () => {
       "href",
       "#contacts",
     );
+    // Прокат — внешний проект, живёт в левой группе рядом с разделами сайта.
+    const rent = leftNav().getByRole("link", { name: RENT.label });
+    expect(rent).toHaveAttribute("href", RENT.href);
+    expect(rent).toHaveAttribute("target", "_blank");
+    // rel обязателен у target=_blank: без noopener открытая вкладка получает
+    // доступ к window.opener.
+    expect(rent).toHaveAttribute("rel", expect.stringContaining("noopener"));
+
     // Меню закрыто → мобильные дубли вне a11y-дерева, поэтому CTA/лого уникальны
     const cta = screen.getByRole("link", { name: "Записаться" });
     expect(cta).toHaveAttribute("href", "https://t.me/holod_styling"); // внешний чат
@@ -145,12 +153,21 @@ describe("F8 · a11y-проводка и контент", () => {
     ).toHaveAttribute("href", "#top");
   });
 
-  it("8. мобильное меню: все NAV_LINKS + CTA (при открытии)", async () => {
+  it("8. мобильное меню: все NAV_LINKS + Прокат + CTA + Сертификаты", async () => {
     const user = userEvent.setup();
     render(<Header />);
     await user.click(burger());
     const M = inMenu();
-    expect(M.getAllByRole("link")).toHaveLength(NAV_LINKS.length + 1); // 5 + CTA
+    // 5 якорей + Прокат + CTA. Считаем, а не перечисляем: пропавший пункт
+    // иначе заметить нечем — на мобильном это единственный способ навигации.
+    expect(M.getAllByRole("link")).toHaveLength(NAV_LINKS.length + 2);
+    const rent = M.getByRole("link", { name: RENT.label });
+    expect(rent).toHaveAttribute("href", RENT.href);
+    expect(rent).toHaveAttribute("target", "_blank");
+    // Сертификаты — кнопка, а не ссылка: открывает диалог.
+    expect(
+      M.getByRole("button", { name: CERTIFICATES_LABEL }),
+    ).toBeInTheDocument();
     expect(M.getByRole("link", { name: "Обо мне" })).toHaveAttribute(
       "href",
       "#about",
@@ -162,6 +179,59 @@ describe("F8 · a11y-проводка и контент", () => {
     expect(M.getByRole("link", { name: "Записаться" })).toHaveAttribute(
       "href",
       "https://t.me/holod_styling",
+    );
+  });
+});
+
+// ───────────────────── Сертификаты ─────────────────────
+describe("F8 · модалка сертификатов", () => {
+  const openCerts = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByRole("button", { name: CERTIFICATES_LABEL }));
+    return screen.findByRole("dialog");
+  };
+
+  it("11. пункт «Сертификаты» открывает диалог с покупкой в Telegram", async () => {
+    const user = userEvent.setup();
+    render(<Header />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    const dialog = await openCerts(user);
+    expect(dialog).toHaveAccessibleName(/Подарочный сертификат/);
+    // Ключевое обещание пункта: из окна можно уйти в чат. Проверяем адрес,
+    // а не факт наличия кнопки, — ссылка «в никуда» выглядела бы так же.
+    const buy = within(dialog).getByRole("link", { name: /Telegram/i });
+    expect(buy).toHaveAttribute("href", "https://t.me/holod_styling");
+    expect(buy).toHaveAttribute("target", "_blank");
+    expect(buy).toHaveAttribute("rel", expect.stringContaining("noopener"));
+  });
+
+  it("12. диалог закрывается по Escape и по кнопке «Закрыть»", async () => {
+    const user = userEvent.setup();
+    render(<Header />);
+
+    await openCerts(user);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    const dialog = await openCerts(user);
+    await user.click(within(dialog).getByRole("button", { name: "Закрыть" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("13. из мобильного меню: меню закрывается, диалог открывается", async () => {
+    // Обе вещи разом: оставленное открытым меню перекрыло бы диалог собой,
+    // а незакрытое body.overflow заблокировало бы страницу после закрытия.
+    const user = userEvent.setup();
+    render(<Header />);
+    await user.click(burger());
+    expect(menuEl()).toHaveAttribute("aria-hidden", "false");
+
+    await user.click(
+      inMenu().getByRole("button", { name: CERTIFICATES_LABEL }),
+    );
+    expect(menuEl()).toHaveAttribute("aria-hidden", "true");
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName(
+      /Подарочный сертификат/,
     );
   });
 });

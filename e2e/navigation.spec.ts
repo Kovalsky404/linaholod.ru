@@ -96,3 +96,60 @@ test("7. быстрый просмотр портфолио: открытие �
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 });
+
+test("9. «Прокат» в шапке ведёт в Instagram проката, в новой вкладке", async ({
+  page,
+}) => {
+  const rent = page.locator("header").getByRole("link", { name: "Прокат" });
+  await expect(rent).toHaveAttribute(
+    "href",
+    "https://www.instagram.com/holod.rent/",
+  );
+  await expect(rent).toHaveAttribute("target", "_blank");
+});
+
+test("10. «Сертификаты» открывают диалог с покупкой в Telegram", async ({
+  page,
+}) => {
+  await page
+    .locator("header")
+    .getByRole("button", { name: "Сертификаты" })
+    .click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAccessibleName(/Подарочный сертификат/);
+  await expect(dialog.getByRole("link", { name: /Telegram/i })).toHaveAttribute(
+    "href",
+    "https://t.me/holod_styling",
+  );
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+});
+
+test("11. семь пунктов шапки не наезжают на логотип", async ({ page }) => {
+  // Регресс-лок на раскладку: пунктов стало семь, и на 1024px правая группа
+  // упиралась в логотип вплотную. Поэтому горизонтальное меню включается
+  // с 1280 — ниже работает бургер. Проверяем обе стороны границы.
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await expect(
+    page.locator("header").getByRole("button", { name: /меню/i }),
+  ).toBeVisible();
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const header = page.locator("header");
+  const box = await header
+    .getByRole("navigation", { name: "Основная навигация" })
+    .boundingBox();
+  const logo = await header
+    .getByRole("link", { name: /на главную/ })
+    .boundingBox();
+  const certs = await header
+    .getByRole("button", { name: "Сертификаты" })
+    .boundingBox();
+
+  // Зазор с обеих сторон логотипа — иначе строка выглядит слипшейся.
+  expect(logo!.x - (box!.x + box!.width)).toBeGreaterThan(8);
+  expect(certs!.x - (logo!.x + logo!.width)).toBeGreaterThan(8);
+});

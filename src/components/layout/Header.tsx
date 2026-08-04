@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { BRAND, CTA, NAV_LINKS } from "@/lib/site-config";
+import {
+  BRAND,
+  CERTIFICATES_LABEL,
+  CTA,
+  NAV_LINKS,
+  RENT,
+} from "@/lib/site-config";
+import { CertificatesModal } from "@/components/ui/CertificatesModal";
 
 // Две группы десктоп-навигации, как в макете (узел Figma 18:30):
 // слева у логотипа — Обо мне / Услуги / Портфолио, справа у CTA — Отзывы / Контакты.
@@ -15,6 +22,16 @@ const RIGHT_NAV = NAV_LINKS.filter((l) =>
 
 const navItemClass =
   "text-foreground/80 hover:text-foreground text-sm uppercase transition-colors duration-200 ease-out";
+
+// Пунктов стало семь. На lg (1024px) они помещались только впритык — правая
+// группа упиралась в логотип без зазора, свободного места оставалось ~48px на
+// всю строку. Поэтому горизонтальное меню включается с xl (1280), а до него
+// работает бургер: в нём есть все те же пункты, включая Прокат и Сертификаты.
+const navGapClass = "gap-6 2xl:gap-8";
+
+/** Один пункт мобильного меню: и ссылки, и кнопка выглядят одинаково. */
+const mobileItemClass =
+  "heading-upper text-foreground border-foreground/10 border-b py-4 text-left text-3xl font-bold transition-[opacity,transform] duration-300 ease-out";
 
 /**
  * Шапка сайта.
@@ -32,6 +49,7 @@ const navItemClass =
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [certsOpen, setCertsOpen] = useState(false);
 
   // Появление фона шапки после небольшого скролла.
   useEffect(() => {
@@ -76,69 +94,90 @@ export function Header() {
         {/* Три зоны: лево — центр (логотип) — право. grid-cols-[1fr_auto_1fr]
             держит логотип строго по центру при любой длине пунктов меню. */}
         <div className="container-site grid h-14 grid-cols-[1fr_auto_1fr] items-center sm:h-20">
-        {/* Левая зона: десктоп — левая группа меню; мобайл — бургер */}
-        <div className="flex items-center justify-start">
-          {/* Бургер (мобайл/планшет) */}
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls="mobile-menu"
-            aria-label={open ? "Закрыть меню" : "Открыть меню"}
-            className="text-foreground -ml-1 inline-flex h-11 w-11 items-center justify-center lg:hidden"
-          >
-            {open ? (
-              <X size={28} strokeWidth={2} />
-            ) : (
-              <Menu size={28} strokeWidth={2} />
-            )}
-          </button>
+          {/* Левая зона: десктоп — левая группа меню; мобайл — бургер */}
+          <div className="flex items-center justify-start">
+            {/* Бургер (мобайл/планшет) */}
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="mobile-menu"
+              aria-label={open ? "Закрыть меню" : "Открыть меню"}
+              className="text-foreground -ml-1 inline-flex h-11 w-11 items-center justify-center xl:hidden"
+            >
+              {open ? (
+                <X size={28} strokeWidth={2} />
+              ) : (
+                <Menu size={28} strokeWidth={2} />
+              )}
+            </button>
 
-          {/* Левая группа меню (десктоп) */}
-          <nav
-            aria-label="Основная навигация"
-            className="hidden items-center gap-8 lg:flex xl:gap-10"
-          >
-            {LEFT_NAV.map((link) => (
-              <a key={link.href} href={link.href} className={navItemClass}>
-                {link.label}
+            {/* Левая группа меню (десктоп) */}
+            <nav
+              aria-label="Основная навигация"
+              className={`hidden items-center xl:flex ${navGapClass}`}
+            >
+              {LEFT_NAV.map((link) => (
+                <a key={link.href} href={link.href} className={navItemClass}>
+                  {link.label}
+                </a>
+              ))}
+              {/* Прокат — внешний проект, поэтому в новой вкладке. */}
+              <a
+                href={RENT.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={navItemClass}
+              >
+                {RENT.label}
               </a>
-            ))}
-          </nav>
-        </div>
+            </nav>
+          </div>
 
-        {/* Центр: логотип */}
-        <a
-          href="#top"
-          className="heading-upper text-foreground justify-self-center text-xl font-bold sm:text-3xl"
-          aria-label={`${BRAND.name} — на главную`}
-        >
-          {BRAND.name}
-        </a>
-
-        {/* Правая зона: правая группа меню + CTA (десктоп). На мобайле пусто —
-            grid сохраняет логотип по центру. */}
-        <div className="hidden items-center justify-end gap-8 lg:flex xl:gap-10">
-          <nav
-            aria-label="Дополнительная навигация"
-            className="flex items-center gap-8"
-          >
-            {RIGHT_NAV.map((link) => (
-              <a key={link.href} href={link.href} className={navItemClass}>
-                {link.label}
-              </a>
-            ))}
-          </nav>
-
+          {/* Центр: логотип */}
           <a
-            href={CTA.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-pill px-5 py-2.5 text-sm font-medium"
+            href="#top"
+            className="heading-upper text-foreground justify-self-center text-xl font-bold sm:text-3xl"
+            aria-label={`${BRAND.name} — на главную`}
           >
-            {CTA.label}
+            {BRAND.name}
           </a>
-        </div>
+
+          {/* Правая зона: правая группа меню + CTA (десктоп). На мобайле пусто —
+            grid сохраняет логотип по центру. */}
+          <div
+            className={`hidden items-center justify-end xl:flex ${navGapClass}`}
+          >
+            {/* Кнопка, а не ссылка: открывает диалог, никуда не ведёт. Поэтому
+              и стоит ВНЕ <nav> — это не навигация по странице. */}
+            <button
+              type="button"
+              onClick={() => setCertsOpen(true)}
+              className={navItemClass}
+            >
+              {CERTIFICATES_LABEL}
+            </button>
+
+            <nav
+              aria-label="Дополнительная навигация"
+              className={`flex items-center ${navGapClass}`}
+            >
+              {RIGHT_NAV.map((link) => (
+                <a key={link.href} href={link.href} className={navItemClass}>
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+
+            <a
+              href={CTA.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-pill px-5 py-2.5 text-sm font-medium"
+            >
+              {CTA.label}
+            </a>
+          </div>
         </div>
       </div>
 
@@ -147,7 +186,7 @@ export function Header() {
       <div
         id="mobile-menu"
         aria-hidden={!open}
-        className={`bg-background fixed inset-x-0 top-14 bottom-0 z-40 origin-top transition-[opacity,transform] duration-300 ease-out sm:top-20 lg:hidden ${
+        className={`bg-background fixed inset-x-0 top-14 bottom-0 z-40 origin-top transition-[opacity,transform] duration-300 ease-out sm:top-20 xl:hidden ${
           open
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-2 opacity-0"
@@ -157,19 +196,42 @@ export function Header() {
           aria-label="Мобильная навигация"
           className="flex h-full flex-col gap-2 overflow-y-auto px-5 pt-6 pb-12"
         >
-          {NAV_LINKS.map((link, i) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={close}
-              style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
-              className={`heading-upper text-foreground border-foreground/10 border-b py-4 text-3xl font-bold transition-[opacity,transform] duration-300 ease-out ${
-                open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
-              }`}
-            >
-              {link.label}
-            </a>
-          ))}
+          {[...NAV_LINKS, RENT].map((link, i) => {
+            const external = "external" in link;
+            return (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={close}
+                {...(external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+                style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
+                className={`${mobileItemClass} ${
+                  open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+                }`}
+              >
+                {link.label}
+              </a>
+            );
+          })}
+
+          {/* Сертификаты — кнопка: открывает диалог поверх закрывающегося меню */}
+          <button
+            type="button"
+            onClick={() => {
+              close();
+              setCertsOpen(true);
+            }}
+            style={{
+              transitionDelay: open ? `${NAV_LINKS.length * 40 + 40}ms` : "0ms",
+            }}
+            className={`${mobileItemClass} ${
+              open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+            }`}
+          >
+            {CERTIFICATES_LABEL}
+          </button>
 
           <a
             href={CTA.href}
@@ -182,6 +244,8 @@ export function Header() {
           </a>
         </nav>
       </div>
+
+      <CertificatesModal open={certsOpen} onClose={() => setCertsOpen(false)} />
     </header>
   );
 }

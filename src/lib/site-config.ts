@@ -28,6 +28,20 @@ export const CTA = {
   external: true,
 } as const;
 
+/**
+ * «Прокат» в шапке — отдельный проект (аренда образов), живёт в своём
+ * Instagram. Не пункт NAV_LINKS: там только якоря секций этой страницы, и
+ * внешний адрес сломал бы и типы, и мобильное меню, которое строится по ним.
+ */
+export const RENT = {
+  label: "Прокат",
+  href: "https://www.instagram.com/holod.rent/",
+  external: true,
+} as const;
+
+/** Подписи пунктов шапки, которые открывают модалку, а не ведут по ссылке. */
+export const CERTIFICATES_LABEL = "Сертификаты";
+
 export type SocialLink = {
   /** Машинный ключ — выбирает иконку в компоненте. */
   key: "telegram" | "instagram";
