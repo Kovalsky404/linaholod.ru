@@ -71,6 +71,30 @@ describe("F15 · Reviews — ленты", () => {
     expect(card.className).not.toMatch(/(^|[\s:])h-\[/);
   });
 
+  it("c3. чем длиннее отзыв, тем ШИРЕ карточка", () => {
+    // Суть правки: длинный отзыв растёт вширь, а не вверх. Высоту в jsdom не
+    // измерить, поэтому проверяем сам механизм — ступени ширины монотонно
+    // растут с длиной текста. Если ступени схлопнут в одну, карточки снова
+    // начнут вытягиваться в высоту, и ряд рассыплется.
+    const lengths = [40, 150, 220, 300, 420];
+    const widths = lengths.map((n) => {
+      const { container, unmount } = render(
+        <Reviews reviews={[{ author: "A", rating: 5, text: "я".repeat(n) }]} />,
+      );
+      const cls = container.querySelector("figure")!.className;
+      const w = Number(/sm:w-\[(\d+)px\]/.exec(cls)?.[1]);
+      unmount();
+      return w;
+    });
+
+    expect(widths.every(Number.isFinite), `ширины: ${widths}`).toBe(true);
+    for (let i = 1; i < widths.length; i++) {
+      expect(widths[i]!, `ступень ${i}: ${widths}`).toBeGreaterThan(
+        widths[i - 1]!,
+      );
+    }
+  });
+
   it("d. один отзыв не ломает деление на две ленты", () => {
     // Граничный случай реальных данных: половина от 1 — это 1 и 0.
     render(<Reviews reviews={[r("Одинокий")]} />);
