@@ -108,6 +108,7 @@ type RawSettings = {
   whyMeTitle?: string;
   whyMeText?: string;
   whyMeImage?: SanityImageSource;
+  certificatesImage?: SanityImageSource;
   servicesTerms?: string;
   bookingIntro?: string;
 };
@@ -230,6 +231,11 @@ export async function getSiteSettings(): Promise<SiteSettingsView | null> {
     whyMeText: raw.whyMeText,
     // 2000: блок занимает 41vw (на 1920 это 787 CSS-px, 1574 на retina).
     whyMeImage: raw.whyMeImage ? resolveImage(raw.whyMeImage, 2000) : undefined,
+    // 1200: колонка с кадром в окне — примерно 390 CSS-px на десктопе и
+    // ширина экрана на мобильном, то есть до ~860 физических на retina.
+    certificatesImage: raw.certificatesImage
+      ? resolveImage(raw.certificatesImage, 1200)
+      : undefined,
     servicesTerms: raw.servicesTerms,
     bookingIntro: raw.bookingIntro,
   };
