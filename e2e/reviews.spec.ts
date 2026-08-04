@@ -140,6 +140,34 @@ test("R7. прокрутка ленты мгновенная, а не аними
   expect(behavior).toBe("auto");
 });
 
+test("R8. на широком мониторе лента тоже едет", async ({ page }) => {
+  // Регресс-лок на реальный баг: при фиксированных двух копиях одна копия
+  // (≈1320px) оказывалась уже экрана начиная с 1440px, петля становилась
+  // недостижимой и дрейф выключался совсем. На телефоне копия шире экрана,
+  // поэтому там всё работало — и на десктопе баг заметил уже клиент.
+  // Дефолтный вьюпорт Playwright (1280) проходил условие впритык и ничего
+  // не ловил, поэтому здесь берём заведомо широкий.
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await page.reload();
+  await page.locator("#reviews").scrollIntoViewIfNeeded();
+
+  const row = page.getByRole("group", { name: ROW }).nth(1);
+  await readyRow(row);
+
+  // Запас прокрутки должен покрывать период петли, иначе перескакивать некуда.
+  const room = await row.evaluate((el) => {
+    const track = el.firstElementChild as HTMLElement;
+    const period = el.scrollWidth / track.children.length;
+    return el.scrollWidth - el.clientWidth - period;
+  });
+  expect(room).toBeGreaterThan(0);
+
+  const before = await pos(row);
+  await expect
+    .poll(async () => Math.abs((await pos(row)) - before), { timeout: 5000 })
+    .toBeGreaterThan(5);
+});
+
 test("R5. ленты не тянут вбок саму страницу", async ({ page }) => {
   const row = page.getByRole("group", { name: ROW }).first();
   await readyRow(row);

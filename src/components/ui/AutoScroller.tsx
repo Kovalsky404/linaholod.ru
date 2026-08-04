@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * Лента, которая едет сама, но которую можно прокрутить руками.
@@ -11,9 +11,8 @@ import { useEffect, useRef, type ReactNode } from "react";
  * начинает тянуть содержимое, которое одновременно уезжает само. Здесь обе
  * силы действуют на ОДНО свойство — `scrollLeft`, поэтому конфликта нет.
  *
- * Ожидания к разметке: `children` содержат контент РОВНО ДВАЖДЫ (дубль —
- * с aria-hidden). Петля перескакивает на половину прокрутки, где под курсором
- * оказываются те же самые пиксели, — шва не видно.
+ * `children` — ОДНА копия содержимого. Дублирует компонент сам: сколько копий
+ * нужно, зависит от ширины экрана (см. recalc), а не от разметки.
  *
  * Взаимодействие пользователя важнее: любое касание, колесо или клавиша
  * приостанавливают дрейф на IDLE_MS, иначе лента выдёргивала бы карточку
@@ -24,57 +23,79 @@ import { useEffect, useRef, type ReactNode } from "react";
 const IDLE_MS = 1500;
 
 export function AutoScroller({
-  /** Секунд на полный цикл — тот же смысл, что у прежней CSS-анимации. */
+  /** Секунд на прокрутку одной копии — тот же смысл, что у прежней анимации. */
   duration,
   direction,
   label,
-  className = "",
+  /** Классы зазора; одни и те же на дорожке и внутри копии. */
+  gapClass,
   children,
 }: {
   duration: number;
   direction: "left" | "right";
   label: string;
-  className?: string;
+  gapClass: string;
   children: ReactNode;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  /** Ширина одной копии вместе с зазором до следующей = период петли. */
+  const periodRef = useRef(0);
+  const [copies, setCopies] = useState(2);
 
+  // ── Сколько копий нужно ───────────────────────────────────────────────
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const box = boxRef.current;
+    const track = trackRef.current;
+    if (!box || !track) return;
 
-    /** Ширина одной копии контента = половина всей прокручиваемой ширины. */
-    let half = el.scrollWidth / 2;
-    /**
-     * Петля достижима, только если одна копия шире видимой области:
-     * максимум прокрутки равен 2·half − clientWidth, и он должен дотягивать
-     * до half. При коротком списке на широком экране лента просто стоит —
-     * прокручивать там нечего, и дрейф упёрся бы в край.
-     */
-    const canLoop = () => half > el.clientWidth;
+    const recalc = () => {
+      const first = track.firstElementChild as HTMLElement | null;
+      if (!first) return;
+      const gap = Number.parseFloat(getComputedStyle(track).columnGap) || 0;
+      const period = first.offsetWidth + gap;
+      if (period <= 0) return; // нет раскладки (jsdom) — мерить нечего
+      periodRef.current = period;
 
-    const measure = () => {
-      half = el.scrollWidth / 2;
+      /**
+       * Петля перескакивает назад на период, поэтому видимое окно при любом
+       * положении внутри периода обязано попадать на реальный контент:
+       * period + ширина экрана <= период × копий.
+       *
+       * Именно здесь ломалось на десктопе: при фиксированных двух копиях
+       * одна копия (≈1344px) оказывалась уже экрана начиная с 1440px, петля
+       * становилась недостижимой, и дрейф выключался совсем. На телефоне
+       * копия шире экрана, поэтому там всё работало — и баг был не виден.
+       */
+      setCopies(Math.max(2, Math.ceil(box.clientWidth / period) + 1));
     };
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
 
-    // Правая лента едет к нулю, поэтому стартует из середины.
-    if (direction === "right" && canLoop()) el.scrollLeft = half;
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    ro.observe(box);
+    return () => ro.disconnect();
+    // copies в зависимостях нарочно: после добавления копий период не
+    // меняется, но пересчёт дешёвый и защищает от гонки первого замера.
+  }, [copies]);
 
+  // ── Дрейф ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     /**
      * Позицию ведём отдельной переменной с дробной частью, а не читаем
      * scrollLeft перед каждым шагом.
      *
      * Chromium округляет scrollLeft при ЧТЕНИИ до целого, а шаг дрейфа — доли
-     * пикселя за кадр (ширина копии за минуту). Схема «прочитал → прибавил →
-     * записал» теряла остаток целиком: позиция вечно оставалась нулём, тут же
-     * срабатывала петля «<= 0 → прыжок на half», на следующем кадре обратно —
-     * и лента дёргалась между краями каждый кадр вместо движения.
+     * пикселя за кадр. Схема «прочитал → прибавил → записал» теряла остаток
+     * целиком: позиция вечно оставалась нулём, тут же срабатывала петля
+     * «< 0 → прыжок на период», на следующем кадре обратно — и лента
+     * дёргалась между краями каждый кадр вместо движения.
      */
-    let posX = el.scrollLeft;
-
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let posX = box.scrollLeft;
+    let started = false;
     let raf = 0;
     let prev = 0;
     let idleUntil = 0;
@@ -86,22 +107,35 @@ export function AutoScroller({
       const dt = prev ? Math.min((now - prev) / 1000, 0.05) : 0;
       prev = now;
 
-      if (!canLoop()) return;
+      const period = periodRef.current;
+      // Петля недостижима — прокручивать нечего (мало отзывов на широком
+      // экране). Лента просто стоит, руками её всё равно можно двигать.
+      if (period <= 0 || box.scrollWidth - box.clientWidth < period - 1) return;
+
+      // Лента, едущая вправо, движется к нулю — значит стартует с периода.
+      if (!started) {
+        started = true;
+        if (direction === "right") {
+          posX = period;
+          box.scrollLeft = posX;
+          return;
+        }
+      }
 
       // Пользователь мог прокрутить ленту сам — подхватываем его позицию,
       // иначе следующий кадр дрейфа отбросил бы её назад. Порог в пару
       // пикселей, потому что читаемый scrollLeft округлён.
-      if (Math.abs(el.scrollLeft - posX) > 2) posX = el.scrollLeft;
+      if (Math.abs(box.scrollLeft - posX) > 2) posX = box.scrollLeft;
 
       // Пауза после действия пользователя и режим «меньше движения» — ничего
       // не трогаем вообще: позиция пользователя остаётся его позицией.
       if (reduce.matches || now < idleUntil) return;
 
-      posX += (half / duration) * dt * (direction === "left" ? 1 : -1);
+      posX += (period / duration) * dt * (direction === "left" ? 1 : -1);
       // Петля: под курсором те же самые пиксели, поэтому перескок незаметен.
-      if (posX >= half) posX -= half;
-      else if (posX < 0) posX += half;
-      el.scrollLeft = posX;
+      if (posX >= period) posX -= period;
+      else if (posX < 0) posX += period;
+      box.scrollLeft = posX;
     };
     raf = requestAnimationFrame(frame);
 
@@ -109,18 +143,17 @@ export function AutoScroller({
       idleUntil = performance.now() + IDLE_MS;
     };
     const events = ["pointerdown", "wheel", "touchstart", "keydown"] as const;
-    for (const e of events) el.addEventListener(e, hold, { passive: true });
+    for (const e of events) box.addEventListener(e, hold, { passive: true });
 
     return () => {
       cancelAnimationFrame(raf);
-      ro.disconnect();
-      for (const e of events) el.removeEventListener(e, hold);
+      for (const e of events) box.removeEventListener(e, hold);
     };
   }, [duration, direction]);
 
   return (
     <div
-      ref={ref}
+      ref={boxRef}
       // tabIndex=0 обязателен: прокручиваемая область без него недоступна с
       // клавиатуры (WCAG 2.1.1) — стрелки в неё просто не попадут.
       tabIndex={0}
@@ -133,9 +166,21 @@ export function AutoScroller({
       // мгновенного получится видимый пролёт по всем карточкам.
       // overscroll-x-contain — чтобы прокрутка ленты до края не листала
       // историю браузера свайпом и не тянула страницу вбок.
-      className={`no-scrollbar w-full overflow-x-auto overscroll-x-contain scroll-auto ${className}`}
+      className="no-scrollbar w-full overflow-x-auto overscroll-x-contain scroll-auto"
     >
-      {children}
+      <div ref={trackRef} className={`flex w-max items-start ${gapClass}`}>
+        {Array.from({ length: copies }, (_, i) => (
+          <div
+            key={i}
+            className={`flex flex-none items-start ${gapClass}`}
+            // Копии скрыты от скринридера: озвучивать одно и то же по нескольку
+            // раз незачем. Фокусируемых элементов внутри быть не должно.
+            aria-hidden={i > 0}
+          >
+            {children}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

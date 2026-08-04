@@ -16,7 +16,12 @@ import { AutoScroller } from "./AutoScroller";
 describe("F15 · AutoScroller", () => {
   const renderOne = () =>
     render(
-      <AutoScroller duration={30} direction="left" label="Лента отзывов">
+      <AutoScroller
+        duration={30}
+        direction="left"
+        label="Лента отзывов"
+        gapClass="gap-4"
+      >
         <div>содержимое</div>
       </AutoScroller>,
     );
@@ -41,9 +46,16 @@ describe("F15 · AutoScroller", () => {
     expect(box.className).toContain("overscroll-x-contain");
   });
 
-  it("c. children рендерятся как есть", () => {
-    renderOne();
-    expect(screen.getByText("содержимое")).toBeInTheDocument();
+  it("c. children дублируются, лишние копии скрыты от скринридера", () => {
+    // Дублирование делает сам компонент: сколько копий нужно для бесшовной
+    // петли, зависит от ширины экрана. В jsdom раскладки нет, поэтому
+    // остаётся SSR-значение по умолчанию — две копии.
+    const { container } = renderOne();
+    expect(screen.getAllByText("содержимое")).toHaveLength(2);
+
+    const hidden = container.querySelectorAll("[aria-hidden='true']");
+    expect(hidden).toHaveLength(1); // скрыта ровно лишняя копия, не оригинал
+    expect(hidden[0]).toHaveTextContent("содержимое");
   });
 
   it("d. размонтирование останавливает цикл кадров", () => {

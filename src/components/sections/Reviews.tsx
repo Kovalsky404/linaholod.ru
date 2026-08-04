@@ -59,9 +59,9 @@ function ReviewCard({ review }: { review: Review }) {
  * останавливается: пауза наступает только от реального действия
  * пользователя.
  *
- * Контент продублирован — ровно два набора, на чём и держится бесшовная
- * петля в AutoScroller. Дубль скрыт от скринридера: озвучивать одни и те же
- * отзывы дважды незачем.
+ * Сюда передаётся ОДИН набор карточек. Сколько раз его продублировать для
+ * бесшовной петли, решает AutoScroller: это зависит от ширины экрана, а не
+ * от разметки.
  */
 function ReviewsRow({
   items,
@@ -75,20 +75,15 @@ function ReviewsRow({
   label: string;
 }) {
   return (
-    <AutoScroller duration={duration} direction={direction} label={label}>
-      <div className="flex w-max items-start gap-4 sm:gap-6">
-        {[0, 1].map((copy) => (
-          <div
-            key={copy}
-            className="flex flex-none items-start gap-4 pr-4 sm:gap-6 sm:pr-6"
-            aria-hidden={copy === 1}
-          >
-            {items.map((review) => (
-              <ReviewCard key={`${copy}-${review.author}`} review={review} />
-            ))}
-          </div>
-        ))}
-      </div>
+    <AutoScroller
+      duration={duration}
+      direction={direction}
+      label={label}
+      gapClass="gap-4 sm:gap-6"
+    >
+      {items.map((review) => (
+        <ReviewCard key={review.author} review={review} />
+      ))}
     </AutoScroller>
   );
 }
