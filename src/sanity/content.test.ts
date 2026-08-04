@@ -221,7 +221,7 @@ describe("F4 · путь с данными: маппинг", () => {
     expect(fetchMock).toHaveBeenCalledWith(reviewsQuery);
   });
 
-  it("S10. getSiteSettings(rich) — ВСЕ поля + hero 3200 / whyMe 2000", async () => {
+  it("S10. getSiteSettings(rich) — ВСЕ поля + ширины изображений", async () => {
     // Полный toEqual ловит любую перепутанную/потерянную проводку скаляров
     // и обе ширины изображений (asymmetry «missing → undefined» — в S17).
     setFetch({
@@ -235,6 +235,7 @@ describe("F4 · путь с данными: маппинг", () => {
       whyMeTitle: "WT",
       whyMeText: "Wtext",
       whyMeImage: { __id: "w" },
+      certificatesImage: { __id: "c" },
       servicesTerms: "terms",
       bookingIntro: "intro",
     });
@@ -252,6 +253,9 @@ describe("F4 · путь с данными: маппинг", () => {
       whyMeTitle: "WT",
       whyMeText: "Wtext",
       whyMeImage: { src: img("w", 2000), unoptimized: false },
+      // 1200: колонка кадра в окне «Сертификаты» — около 390 CSS-px на
+      // десктопе и ширина экрана на мобильном.
+      certificatesImage: { src: img("c", 1200), unoptimized: false },
       servicesTerms: "terms",
       bookingIntro: "intro",
     });

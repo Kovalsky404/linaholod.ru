@@ -13,6 +13,7 @@ export const siteSettingsQuery = groq`
     aboutTitle, aboutText, aboutGallery,
     whyMeTitle, whyMeText, whyMeImage,
     servicesTerms,
+    certificatesImage,
     bookingIntro
   }
 `;

@@ -82,7 +82,7 @@ export default async function SiteLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <span id="top" aria-hidden="true" />
-      <Header />
+      <Header certificatesImage={settings?.certificatesImage} />
       <main className="flex flex-1 flex-col">{children}</main>
       <Footer
         social={

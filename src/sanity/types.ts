@@ -43,6 +43,8 @@ export type SiteSettingsView = {
   whyMeTitle?: string;
   whyMeText?: string;
   whyMeImage?: ResolvedImage;
+  /** Кадр для окна «Сертификаты» (пропорция 4:5). */
+  certificatesImage?: ResolvedImage;
   servicesTerms?: string;
   bookingIntro?: string;
 };

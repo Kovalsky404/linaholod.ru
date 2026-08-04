@@ -218,6 +218,31 @@ describe("F8 · модалка сертификатов", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("12b. кадр из Sanity попадает в окно; без него — серая заглушка", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <Header
+        certificatesImage={{ src: "https://cdn.x/cert.jpg", unoptimized: true }}
+      />,
+    );
+    const dialog = await openCerts(user);
+    // getAllBy: кадр декоративный (alt=""), поэтому ищем узлом, а не ролью.
+    expect(dialog.querySelector("img")).toHaveAttribute(
+      "src",
+      "https://cdn.x/cert.jpg",
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    rerender(<Header />);
+    const plain = await openCerts(user);
+    // Пока клиент не залил фото, слот обязан показывать заглушку, а не
+    // пустоту: без неё колонка схлопнулась бы и раскладка окна поехала.
+    expect(plain.querySelector("img")).toHaveAttribute(
+      "src",
+      "/images/placeholder.svg",
+    );
+  });
+
   it("13. из мобильного меню: меню закрывается, диалог открывается", async () => {
     // Обе вещи разом: оставленное открытым меню перекрыло бы диалог собой,
     // а незакрытое body.overflow заблокировало бы страницу после закрытия.

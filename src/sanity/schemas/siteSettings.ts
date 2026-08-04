@@ -14,6 +14,7 @@ export const siteSettings = defineType({
     { name: "about", title: "Обо мне" },
     { name: "whyMe", title: "Почему я" },
     { name: "services", title: "Услуги" },
+    { name: "certificates", title: "Сертификаты" },
     { name: "booking", title: "Запись" },
   ],
   fields: [
@@ -115,6 +116,19 @@ export const siteSettings = defineType({
       type: "text",
       rows: 5,
       group: "services",
+    }),
+
+    // Сертификаты
+    defineField({
+      name: "certificatesImage",
+      title: "Фото для окна «Сертификаты»",
+      description:
+        "Вертикальный кадр в пропорции 4:5 (например 1600×2000). Другие " +
+        "пропорции не сломают вёрстку — кадр обрежется по центру, но края " +
+        "могут уйти. Пока фото не залито, показывается серая заглушка.",
+      type: "image",
+      options: { hotspot: true },
+      group: "certificates",
     }),
 
     // Запись

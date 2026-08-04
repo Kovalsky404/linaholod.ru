@@ -10,6 +10,7 @@ import {
   RENT,
 } from "@/lib/site-config";
 import { CertificatesModal } from "@/components/ui/CertificatesModal";
+import type { ResolvedImage } from "@/sanity/types";
 
 // Две группы десктоп-навигации, как в макете (узел Figma 18:30):
 // слева у логотипа — Обо мне / Услуги / Портфолио, справа у CTA — Отзывы / Контакты.
@@ -46,7 +47,10 @@ const mobileItemClass =
  * - smooth-scroll к секциям обеспечивается scroll-behavior на <html> и
  *   scroll-margin-top на секциях; всё уважает prefers-reduced-motion.
  */
-export function Header() {
+export function Header({
+  /** Кадр для окна «Сертификаты» из Sanity; без него — серая заглушка. */
+  certificatesImage,
+}: { certificatesImage?: ResolvedImage } = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [certsOpen, setCertsOpen] = useState(false);
@@ -245,7 +249,11 @@ export function Header() {
         </nav>
       </div>
 
-      <CertificatesModal open={certsOpen} onClose={() => setCertsOpen(false)} />
+      <CertificatesModal
+        open={certsOpen}
+        onClose={() => setCertsOpen(false)}
+        image={certificatesImage}
+      />
     </header>
   );
 }
