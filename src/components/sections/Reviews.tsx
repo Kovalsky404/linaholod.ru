@@ -31,12 +31,19 @@ function Stars({ rating }: { rating: number }) {
 
 /**
  * Карточка отзыва: звёзды + цитата + автор. Без нумерации.
- * Высота фиксированная (одинаковая у всех), ширина — по содержимому
- * (w-auto с min/max), чтобы лента выглядела живой, а не «решёткой».
+ *
+ * Высота — МИНИМАЛЬНАЯ, а не фиксированная. Раньше стояла жёсткая h-[300px],
+ * и отзыв длиннее пары строк вылезал за рамку карточки (замерено: текст на
+ * 116px ниже её низа, поверх соседей). То есть настоящие отзывы, которые
+ * всегда разной длины, ломали секцию. Теперь короткие держат общий ритм по
+ * min-h, а длинные растут вниз; ряд выровнен по верху (items-start), поэтому
+ * разная высота выглядит живой лентой, а не сбитой сеткой.
+ *
+ * Ширина — по содержимому (w-auto с min/max) по той же причине.
  */
 function ReviewCard({ review }: { review: Review }) {
   return (
-    <figure className="border-foreground/10 bg-background flex h-[220px] w-auto max-w-[290px] min-w-[230px] flex-none flex-col justify-between rounded-sm border p-5 sm:h-[300px] sm:max-w-[420px] sm:min-w-[280px] sm:p-8">
+    <figure className="border-foreground/10 bg-background flex min-h-[220px] w-auto max-w-[290px] min-w-[230px] flex-none flex-col justify-between rounded-sm border p-5 sm:min-h-[300px] sm:max-w-[420px] sm:min-w-[280px] sm:p-8">
       <div>
         <Stars rating={review.rating} />
         <blockquote className="text-muted mt-3 text-sm leading-relaxed sm:mt-4 sm:text-lg">
