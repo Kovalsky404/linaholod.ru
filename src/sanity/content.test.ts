@@ -129,10 +129,28 @@ describe("F4 · дуальный путь: фолбэк при null", () => {
     setFetch(null);
     const r = await getReviews();
     expect(r).toEqual([...REVIEWS]);
-    expect(r.length).toBe(10);
-    expect(r[0]!.author).toBe("Анна М.");
-    expect(r[3]!.rating).toBe(4);
+    // Длину берём из данных, а не литералом: набор отзывов меняется вместе с
+    // контентом, и пришпиленное число краснело бы на каждой правке текста,
+    // хотя код при этом исправен. Проверка «вернулись ВСЕ, а не подмножество»
+    // при этом сохраняется.
+    expect(r.length).toBe(REVIEWS.length);
+    expect(REVIEWS.length).toBeGreaterThan(0);
     expect(r).not.toBe(REVIEWS); // не та же ссылка (мутации не заденут исходник)
+  });
+
+  it("S5b. каждый отзыв в фолбэке заполнен и с оценкой 1–5", async () => {
+    // Вместо литералов вроде r[0].author === «Анна М.»: те краснели на любой
+    // правке текста, хотя код исправен. Реальный риск при ручном
+    // редактировании файла другой — забытая оценка или опечатка вроде 6:
+    // звёзды тогда отрисуются молча неправильно.
+    setFetch(null);
+    for (const rev of await getReviews()) {
+      expect(rev.author.trim(), JSON.stringify(rev)).not.toBe("");
+      expect(rev.text.trim().length).toBeGreaterThan(10);
+      expect(Number.isInteger(rev.rating)).toBe(true);
+      expect(rev.rating).toBeGreaterThanOrEqual(1);
+      expect(rev.rating).toBeLessThanOrEqual(5);
+    }
   });
 
   it("S6. getSiteSettings(null) → null", async () => {
@@ -378,7 +396,7 @@ describe("F4 · контракт null / undefined / []", () => {
     expect((await getServices()).length).toBe(SERVICES.length);
     // spot-check на другой коллекции
     setFetch([]);
-    expect((await getReviews()).length).toBe(10);
+    expect((await getReviews()).length).toBe(REVIEWS.length);
   });
 
   it("S17. settings: {} → объект undefined-полей (не null); undefined → null", async () => {
