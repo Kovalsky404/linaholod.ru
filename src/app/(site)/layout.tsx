@@ -7,7 +7,7 @@ import { getServices, getSiteSettings } from "@/sanity/content";
 /** ISR (сек) — правки в Studio появляются без передеплоя. Должен быть литералом. */
 export const revalidate = 60;
 
-const TITLE_DEFAULT = "lina H. — персональный стилист";
+const TITLE_DEFAULT = "lina H. — стилист";
 
 /**
  * Лейаут публичного сайта: метаданные, JSON-LD, шапка/футер.
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "lina H. — персональный стилист",
+        alt: "lina H. — стилист",
       },
     ],
   },

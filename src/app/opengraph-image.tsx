@@ -2,13 +2,13 @@ import { ImageResponse } from "next/og";
 
 /**
  * OG-картинка (1200×630), чёрно-белый минимализм в духе макета:
- * крупная надпись «lina H.» + подпись «персональный стилист».
+ * крупная надпись «lina H.» + подпись «стилист».
  *
  * Шрифт — встроенный по умолчанию в next/og (без сетевых зависимостей,
  * чтобы сборка не падала при отсутствии доступа к Google Fonts).
  */
 
-export const alt = "lina H. — персональный стилист";
+export const alt = "lina H. — стилист";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -37,7 +37,7 @@ export default function OpengraphImage() {
           color: "#737373",
         }}
       >
-        персональный стилист
+        стилист
       </div>
 
       {/* Центр-низ: гигантский логотип */}

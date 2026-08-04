@@ -63,7 +63,7 @@ export function WhyMe({ content }: { content?: WhyMeContent } = {}) {
             <div className="bg-placeholder relative aspect-[920/896] w-full overflow-hidden lg:ml-auto">
               <Image
                 src={image.src}
-                alt="Лина Холод — персональный стилист"
+                alt="Лина Холод — стилист"
                 fill
                 loading="lazy"
                 unoptimized={image.unoptimized}
