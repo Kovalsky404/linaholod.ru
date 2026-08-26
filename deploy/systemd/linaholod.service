@@ -1,6 +1,6 @@
 # systemd-юнит для Next.js (next start).
 # Кладётся в /etc/systemd/system/linaholod.service.
-# Требует Node 20+ системно (через NodeSource → /usr/bin/npm).
+# Требует Node 24 системно (через NodeSource → /usr/bin/npm) — как локально.
 
 [Unit]
 Description=linaholod.ru (Next.js)
@@ -12,7 +12,7 @@ User=deploy
 WorkingDirectory=/var/www/linaholod
 Environment=NODE_ENV=production
 Environment=PORT=3000
-# .env.local в WorkingDirectory Next подхватывает сам (в т.ч. серверные TELEGRAM_*).
+# .env.local в WorkingDirectory Next подхватывает сам.
 ExecStart=/usr/bin/npm run start
 Restart=always
 RestartSec=5

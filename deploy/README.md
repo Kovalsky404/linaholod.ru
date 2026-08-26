@@ -15,8 +15,26 @@
 
 ## 0. Что подготовить заранее
 - VPS: Ubuntu 24.04, 1–2 vCPU / 2 ГБ RAM / 20 ГБ (Timeweb Cloud / Selectel / Yandex Cloud).
+  Сервер должен стоять В РОССИИ — иначе переезд бессмысленен: домен режется
+  именно по зарубежному хостингу.
 - Доступ по SSH (root или sudo-пользователь).
 - Содержимое локального `.env.local` (ключи Sanity, `NEXT_PUBLIC_SITE_URL`).
+
+> **Node 24, а не 20.** Локально проект собирается на Node 24, и версия сборки
+> должна совпадать: `next@16` требует ≥20.9, но расхождение мажора между
+> локалью и сервером — источник трудноуловимых различий. Плюс ветка Node 20 по
+> графику Node.js уже вне поддержки.
+
+## 0.1. Проверка ДО установки (одна минута, экономит часы)
+Картинки сайта отдаёт оптимизатор Next: он ходит за исходником на
+`cdn.sanity.io` **с сервера**. Если оттуда нет доступа — на сайте не будет ни
+одной фотографии, причём страница отрисуется, и причина будет неочевидна.
+```bash
+# на VPS, сразу после первого входа
+curl -sI https://cdn.sanity.io/ | head -1        # ждём HTTP-ответ, любой
+curl -sI https://api.sanity.io/v1/ping | head -1 # Studio ходит сюда из браузера
+```
+Оба должны отвечать. Если нет — переезд на этот VPS обсуждать рано.
 
 ## 1. Базовая настройка сервера
 ```bash
@@ -25,10 +43,10 @@ adduser deploy && usermod -aG sudo deploy
 apt update && apt upgrade -y
 apt install -y nginx git curl ufw
 
-# Node 20 (NodeSource)
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+# Node 24 (NodeSource)
+curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
 apt install -y nodejs
-node -v && npm -v   # ожидаем v20+
+node -v && npm -v   # ожидаем v24+
 
 # Firewall
 ufw allow OpenSSH && ufw allow 'Nginx Full' && ufw --force enable
@@ -132,6 +150,13 @@ rsync -az --delete --exclude node_modules --exclude .next --exclude .git \
 ## Заметки
 - `.env.local` нужен ДО `npm run build` (переменные `NEXT_PUBLIC_*` вшиваются в бандл).
 - ISR (`revalidate = 60`) пишет кэш на диск — на одном VPS работает из коробки.
-- Оптимизация картинок `next/image` работает на `next start` без настройки;
-  на glibc может потребоваться донастройка sharp при росте памяти.
+- `sharp` (движок оптимизации картинок) приходит зависимостью самого `next@16`,
+  и в `package-lock.json` есть linux-бинарники — `npm ci` на Ubuntu поставит
+  нужный вариант сам, отдельных действий не требуется. Проверено:
+  `npm ls sharp` → `next@16.2.7 → sharp@0.34.5`.
+- Оптимизация картинок нагружает CPU на первом обращении к каждому размеру,
+  дальше результат лежит в `.next/cache`. Исходники теперь запрашиваются
+  крупные (hero — до 3200px), так что первые открытия после деплоя будут
+  заметно медленнее последующих. На 2 ГБ RAM этого хватает, но если
+  оптимизатор начнёт падать по памяти — смотреть `journalctl -u linaholod`.
 - Логи: `journalctl -u linaholod -f`.
