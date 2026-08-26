@@ -1,24 +1,40 @@
-# systemd-юнит для Next.js (next start).
-# Кладётся в /etc/systemd/system/linaholod.service.
-# Требует Node 24 системно (через NodeSource → /usr/bin/npm) — как локально.
+# systemd-служба сайта: /etc/systemd/system/linaholod.service
+#
+# Запускает собранный Next.js-сервер на 127.0.0.1:3001 — наружу он не смотрит,
+# запросы приходят через Caddy. Порт 3001, потому что 3000 занят соседним
+# проектом (sw-tj) на этом же сервере.
+#
+# Запускается `node server.js`, а не `npm run start`: сборка идёт в режиме
+# output: "standalone" (см. next.config.ts), где server.js самодостаточен.
+# Сделано по образцу соседней службы, чтобы обе выглядели одинаково.
+#
+# Включить:  sudo systemctl enable --now linaholod
+# Логи:      journalctl -u linaholod -f
 
 [Unit]
-Description=linaholod.ru (Next.js)
+Description=linaholod.ru — сайт стилиста
 After=network.target
 
 [Service]
 Type=simple
-User=deploy
-WorkingDirectory=/var/www/linaholod
+WorkingDirectory=/srv/projects/linaholod/current
+ExecStart=/usr/bin/node server.js
+
 Environment=NODE_ENV=production
-Environment=PORT=3000
-# .env.local в WorkingDirectory Next подхватывает сам.
-ExecStart=/usr/bin/npm run start
+Environment=PORT=3001
+Environment=HOSTNAME=127.0.0.1
+# Сайт в покое ест около 100 МБ (замерено), запас нужен оптимизатору картинок.
+# Лимит оставляет место соседу и сборке — на сервере 3.9 ГБ.
+Environment=NODE_OPTIONS=--max-old-space-size=768
+
 Restart=always
-RestartSec=5
-# Мягкая остановка: дать завершить запросы и after()-колбэки.
-KillSignal=SIGTERM
-TimeoutStopSec=30
+RestartSec=3
+
+# Немного изоляции: служба не лезет за пределы своей папки
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+# Блок для /etc/caddy/Caddyfile — ДОПИСАТЬ в конец, ничего не удаляя.
+# Соседний проект (siberianwellness-tj.ru) остаётся как есть.
+#
+# Caddy сам получает сертификат Let's Encrypt и продлевает его — certbot не
+# нужен. Но для выпуска DNS домена уже должен указывать на этот сервер.
+#
+# Применить:  sudo systemctl reload caddy
+# Проверить:  sudo caddy validate --config /etc/caddy/Caddyfile
+
+linaholod.ru {
+	encode zstd gzip
+
+	# Имена файлов Next содержат хеш сборки, поэтому их можно кешировать
+	# навсегда. /images и /videos — статика из public.
+	@static path /_next/static/* /images/* /videos/* /fonts/*
+	header @static Cache-Control "public, max-age=31536000, immutable"
+
+	reverse_proxy 127.0.0.1:3001
+}
+
+# Адрес с www ведёт на основной, чтобы поисковики видели один сайт, а не два
+www.linaholod.ru {
+	redir https://linaholod.ru{uri} permanent
+}

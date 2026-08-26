@@ -1,162 +1,143 @@
-# Перенос linaholod.ru на российский VPS
+# Деплой linaholod.ru на VPS
 
-Зачем: из РФ домен на Vercel режется по SNI (ТСПУ) — сайт недоступен российской
-аудитории. Российский хостинг снимает блокировку.
+Сайт переезжает с Vercel: из РФ домен на Vercel режется по SNI (ТСПУ) и
+недоступен российской аудитории. Российский хостинг снимает блокировку.
 
-> Мотива «локализация ПД по 152-ФЗ ст. 18 ч. 5» здесь БОЛЬШЕ НЕТ: сайт не
-> собирает персональные данные — формы заявки и эндпоинта `/api/lead` не
-> существует, все CTA ведут в Telegram-чат. Остаётся только доступность домена.
+## Что за сервер (осмотрено, не предположения)
 
-Архитектура: `Пользователь → nginx :80/:443 (Let's Encrypt) → Next.js :3000 (systemd)`.
-Сайт статико-подобный (ISR, `revalidate=60`), пользовательских данных не принимает.
-**Sanity остаётся** — там только контент сайта.
+| | |
+|---|---|
+| `194.87.43.128`, Москва | Ubuntu 24.04.4 LTS |
+| RAM | 3.9 ГБ + swap 2 ГБ |
+| Диск | 48 ГБ, свободно 41 ГБ |
+| Node | **v22.23.2** системный (`/usr/bin/node`), npm 10.9.8 |
+| Прокси | **Caddy** — не nginx, nginx не установлен |
+| Порт 3000 | занят соседним проектом `sw-tj` (тоже Next.js) |
+| Наш порт | **3001** |
+| cdn.sanity.io / api.sanity.io | отвечают за 0.08–0.11 с |
+| github.com | отвечает за 0.29 с |
+
+Node 22 подходит: `next@16` требует ≥20.9. Отдельный контейнер и разведение
+версий через nvm не нужны — ставим вторую службу рядом.
+
+Архитектура: `Пользователь → Caddy :80/:443 → node server.js :3001`.
+Caddy сам получает и продлевает сертификаты Let's Encrypt; certbot не нужен.
+
+## Почему standalone
+
+`next.config.ts` собирает в режиме `output: "standalone"` — так же запускается
+соседний проект. На сервере живёт **36 МБ** вместо 862 МБ, `node_modules` после
+сборки не нужны. Ровно поэтому служба стартует `node server.js`, а не
+`npm run start`.
 
 ---
 
-## 0. Что подготовить заранее
-- VPS: Ubuntu 24.04, 1–2 vCPU / 2 ГБ RAM / 20 ГБ (Timeweb Cloud / Selectel / Yandex Cloud).
-  Сервер должен стоять В РОССИИ — иначе переезд бессмысленен: домен режется
-  именно по зарубежному хостингу.
-- Доступ по SSH (root или sudo-пользователь).
-- Содержимое локального `.env.local` (ключи Sanity, `NEXT_PUBLIC_SITE_URL`).
+## Первый деплой
 
-> **Node 24, а не 20.** Локально проект собирается на Node 24, и версия сборки
-> должна совпадать: `next@16` требует ≥20.9, но расхождение мажора между
-> локалью и сервером — источник трудноуловимых различий. Плюс ветка Node 20 по
-> графику Node.js уже вне поддержки.
-
-## 0.1. Проверка ДО установки (одна минута, экономит часы)
-Картинки сайта отдаёт оптимизатор Next: он ходит за исходником на
-`cdn.sanity.io` **с сервера**. Если оттуда нет доступа — на сайте не будет ни
-одной фотографии, причём страница отрисуется, и причина будет неочевидна.
+### 1. Каталоги
 ```bash
-# на VPS, сразу после первого входа
-curl -sI https://cdn.sanity.io/ | head -1        # ждём HTTP-ответ, любой
-curl -sI https://api.sanity.io/v1/ping | head -1 # Studio ходит сюда из браузера
-```
-Оба должны отвечать. Если нет — переезд на этот VPS обсуждать рано.
-
-## 1. Базовая настройка сервера
-```bash
-# под root
-adduser deploy && usermod -aG sudo deploy
-apt update && apt upgrade -y
-apt install -y nginx git curl ufw
-
-# Node 24 (NodeSource)
-curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
-apt install -y nodejs
-node -v && npm -v   # ожидаем v24+
-
-# Firewall
-ufw allow OpenSSH && ufw allow 'Nginx Full' && ufw --force enable
+sudo mkdir -p /srv/projects/linaholod
+sudo chown "$USER":"$USER" /srv/projects/linaholod
+git clone https://github.com/Kovalsky404/linaholod.ru.git /srv/projects/linaholod/repo
 ```
 
-## 2. Код проекта
+### 2. Переменные окружения
 ```bash
-# под deploy
-sudo mkdir -p /var/www/linaholod && sudo chown deploy:deploy /var/www/linaholod
-git clone https://github.com/Kovalsky404/linaholod.ru.git /var/www/linaholod
-cd /var/www/linaholod
+cd /srv/projects/linaholod/repo
+cp .env.example .env.local
+nano .env.local
 ```
-> Если `git clone` из GitHub тормозит из РФ — завести зеркало на Gitverse/GitFlic
-> и клонировать оттуда (см. раздел «Деплой без GitHub» ниже).
+Заполнить как локально, но `NEXT_PUBLIC_SITE_URL=https://linaholod.ru`.
 
-Создать `/var/www/linaholod/.env.local` со всеми ключами (как локально).
-`NEXT_PUBLIC_SITE_URL=https://linaholod.ru`.
+> `.env.local` нужен **только на время сборки**: все `NEXT_PUBLIC_*` вшиваются
+> в бандл, а токен Sanity в рантайме не используется — сайт читает
+> опубликованные данные без авторизации (см. `src/sanity/client.ts`).
+> В рабочий каталог `current/` секреты не копируются.
 
+### 3. Сборка и запуск
 ```bash
-npm ci
-npm run build
+bash /srv/projects/linaholod/repo/deploy/deploy.sh
 ```
+Скрипт соберёт проект, разложит рабочий каталог в `current/`, перезапустит
+службу и проверит, что сайт отвечает.
 
-## 3. Автозапуск (systemd)
+Перед первым запуском поставить службу:
 ```bash
-sudo cp deploy/systemd/linaholod.service /etc/systemd/system/linaholod.service
+sudo cp /srv/projects/linaholod/repo/deploy/systemd/linaholod.service \
+        /etc/systemd/system/linaholod.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now linaholod
-sudo systemctl status linaholod     # active (running)
-curl -I http://127.0.0.1:3000        # 200 — Next отвечает локально
+systemctl status linaholod          # active (running)
+curl -I http://127.0.0.1:3001       # 200
 ```
 
-## 4. nginx + сертификат (порядок важен — иначе 443 не стартует без cert)
+### 4. Caddy
+Дописать блок в конец `/etc/caddy/Caddyfile` — **ничего не удаляя**, соседний
+сайт остаётся как есть:
 ```bash
-sudo mkdir -p /var/www/certbot
-sudo cp deploy/nginx/linaholod.ru.conf /etc/nginx/sites-available/linaholod.ru.conf
-sudo ln -s /etc/nginx/sites-available/linaholod.ru.conf /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+sudo tee -a /etc/caddy/Caddyfile < /srv/projects/linaholod/repo/deploy/caddy/linaholod.ru.caddy
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reload caddy
 ```
 
-ДО получения сертификата временно закомментировать ОБА блока `server { ... 443 ... }`
-в конфиге (иначе `nginx -t` упадёт — нет файлов cert). Затем:
-```bash
-sudo nginx -t && sudo systemctl reload nginx
-```
+### 5. DNS на reg.ru
+В зоне `linaholod.ru`:
+- `@` — запись **A** → `194.87.43.128` (удалить старую A на Vercel)
+- `www` — запись **A** → `194.87.43.128` (удалить CNAME на Vercel)
+- TTL 300, дождаться обновления: `nslookup linaholod.ru`
 
-Получить сертификат (webroot, без остановки nginx):
-```bash
-sudo apt install -y certbot
-sudo certbot certonly --webroot -w /var/www/certbot \
-  -d linaholod.ru -d www.linaholod.ru \
-  --email <твой-email> --agree-tos --no-eff-email
-```
-> Важно: ACME-проверка идёт по HTTP, поэтому DNS уже должен указывать на сервер
-> (см. шаг 5). Если ещё нет — сначала шаг 5, потом certbot.
+Сертификат Caddy выпустит сам при первом обращении к домену — но только
+после того, как DNS уже указывает сюда.
 
-Раскомментировать 443-блоки, перезагрузить и включить автопродление:
-```bash
-sudo nginx -t && sudo systemctl reload nginx
-sudo systemctl enable --now certbot.timer   # авто-renew
-```
-
-## 5. DNS на reg.ru (перевод с Vercel)
-В панели reg.ru → DNS зоны `linaholod.ru`:
-- `@` (apex) — запись **A** → IP сервера (удалить старую A `216.198.79.1`).
-- `www` — запись **A** → IP сервера (удалить CNAME на Vercel).
-- TTL поставить 300, дождаться обновления (`nslookup linaholod.ru`).
-
-После переключения DNS — выполнить шаг 4 (certbot), если не сделан.
-
-## 6. Проверка
+### 6. Проверка
 ```bash
 curl -I https://linaholod.ru          # 200
-curl -I https://www.linaholod.ru      # 301 → https://linaholod.ru
+curl -I https://www.linaholod.ru      # 308 → https://linaholod.ru
 ```
-Открыть с телефона БЕЗ VPN — сайт должен грузиться.
+Открыть с телефона **без VPN** — ради этого всё и затевалось.
 
-## 7. Vercel
-Когда RF-хостинг работает — в Vercel убрать кастомные домены (проект можно
-оставить как резерв/preview на `*.vercel.app`).
+### 7. Vercel
+Когда домен заработает — убрать кастомные домены в Vercel. Проект можно
+оставить как резерв на `*.vercel.app`.
 
 ---
 
-## Обновление сайта (деплой)
+## Обновление сайта
 ```bash
-cd /var/www/linaholod
-bash deploy/deploy.sh        # git pull → npm ci → build → restart
+bash /srv/projects/linaholod/repo/deploy/deploy.sh
+```
+Каталог подменяется одним `mv`, поэтому сайт не лежит во время копирования.
+
+## Если что-то не так
+
+```bash
+journalctl -u linaholod -f      # логи сайта
+journalctl -u caddy -f          # логи прокси
+systemctl status linaholod
 ```
 
-## Деплой без GitHub (если pull из РФ тормозит)
-Вариант А — зеркало на российском git (Gitverse/GitFlic): добавить второй remote,
-пушить туда, на сервере `git pull` из зеркала.
-Вариант Б — rsync собранного проекта с локальной машины:
+**Сайт открылся, но без стилей** — не скопировался `.next/static`. Смотреть
+шаг «static и public» в `deploy.sh`.
+
+**Фотографии грузятся, но тяжёлые** — не подхватился sharp. Проверка в конце
+деплоя печатает `оптимизатор картинок:`; там должно быть `image/webp`, а не
+`image/jpeg`. Причина известна: трассировка Next выбрасывает нативные
+библиотеки libvips, поэтому `deploy.sh` кладёт пакет `sharp` поверх обрезанного.
+Проверить руками:
 ```bash
-# локально (сборка), затем заливка исходников на сервер:
-rsync -az --delete --exclude node_modules --exclude .next --exclude .git \
-  ./ deploy@<IP>:/var/www/linaholod/
-# на сервере: npm ci && npm run build && sudo systemctl restart linaholod
+cd /srv/projects/linaholod/current && node -e "console.log(require('sharp').versions)"
 ```
+
+**Сборка упала по памяти** — swap 2 ГБ уже есть, но если сосед в этот момент
+под нагрузкой, можно собрать с ограничением:
+`NODE_OPTIONS=--max-old-space-size=2048 npm run build`.
 
 ## Заметки
-- `.env.local` нужен ДО `npm run build` (переменные `NEXT_PUBLIC_*` вшиваются в бандл).
-- ISR (`revalidate = 60`) пишет кэш на диск — на одном VPS работает из коробки.
-- `sharp` (движок оптимизации картинок) приходит зависимостью самого `next@16`,
-  и в `package-lock.json` есть linux-бинарники — `npm ci` на Ubuntu поставит
-  нужный вариант сам, отдельных действий не требуется. Проверено:
-  `npm ls sharp` → `next@16.2.7 → sharp@0.34.5`.
-- Оптимизация картинок нагружает CPU на первом обращении к каждому размеру,
-  дальше результат лежит в `.next/cache`. Исходники теперь запрашиваются
-  крупные (hero — до 3200px), так что первые открытия после деплоя будут
-  заметно медленнее последующих. На 2 ГБ RAM этого хватает, но если
-  оптимизатор начнёт падать по памяти — смотреть `journalctl -u linaholod`.
-- Логи: `journalctl -u linaholod -f`.
+- `sharp` приходит зависимостью `next@16` (`npm ls sharp` → `sharp@0.34.5`),
+  linux-бинарники есть в `package-lock.json` — `npm ci` поставит нужный сам.
+- Оптимизация картинок грузит CPU на первом обращении к каждому размеру,
+  дальше результат лежит в `.next/cache`. Исходники крупные (hero до 3200px),
+  поэтому первые открытия после деплоя заметно медленнее. `deploy.sh`
+  переносит кеш между версиями, чтобы не прогревать заново.
+- ISR (`revalidate = 60`) пишет кеш на диск — на одном сервере работает без
+  настройки.
