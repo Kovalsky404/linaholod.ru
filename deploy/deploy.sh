@@ -71,8 +71,17 @@ echo "  главная: 200"
 
 # Отдельно проверяем оптимизатор картинок: если sharp не подхватился, сайт
 # откроется как ни в чём не бывало, но все фото поедут неоптимизированными.
-ctype=$(curl -s -o /dev/null -w "%{content_type}" -H "Accept: image/avif,image/webp,*/*" --max-time 60 \
-  "http://127.0.0.1:$PORT/_next/image?url=%2Fimages%2Fplaceholder.svg&w=640&q=75" || true)
-echo "  оптимизатор картинок: ${ctype:-нет ответа}"
+# Адрес берём НАСТОЯЩИЙ, с самой главной: на SVG проверка молчала — Next их
+# не оптимизирует, и рабочий оптимизатор выглядел как сломанный.
+img=$(curl -s --max-time 15 "http://127.0.0.1:$PORT/" \
+  | grep -o '/_next/image?url=[^"]*' | head -1 | sed 's/&amp;/\&/g')
+if [ -n "$img" ]; then
+  ctype=$(curl -s -o /dev/null -w "%{content_type}" -H "Accept: image/avif,image/webp,*/*" \
+    --max-time 90 "http://127.0.0.1:$PORT$img" || true)
+  echo "  оптимизатор картинок: ${ctype:-нет ответа} (ожидается image/webp)"
+  [ "$ctype" = "image/webp" ] || echo "    ВНИМАНИЕ: фото отдаются неоптимизированными — проверь sharp"
+else
+  echo "  оптимизатор картинок: на главной нет /_next/image — проверить вручную"
+fi
 
 echo "✓ Задеплоено: $(git rev-parse --short HEAD)"
