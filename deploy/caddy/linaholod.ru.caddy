@@ -22,3 +22,24 @@ linaholod.ru {
 www.linaholod.ru {
 	redir https://linaholod.ru{uri} permanent
 }
+
+# ── Второй домен ────────────────────────────────────────────────────────
+# holodlina.ru ВРЕМЕННО отдаёт тот же сайт, а не редиректит на основной.
+# Причина: его DNS уже указывает сюда, а linaholod.ru ещё на Vercel и пока
+# не проверено, что после переезда он вообще откроется из РФ (блокировка
+# шла по SNI). Редирект сейчас увёл бы единственный рабочий домен на
+# недоступный адрес.
+#
+# КОГДА linaholod.ru переедет и откроется без VPN — заменить содержимое
+# этого блока на одну строку:
+#     redir https://linaholod.ru{uri} permanent
+# Тогда поисковики склеят домены в один, а не сочтут их двумя сайтами с
+# одинаковым содержимым.
+holodlina.ru, www.holodlina.ru {
+	encode zstd gzip
+
+	@static path /_next/static/* /images/* /videos/* /fonts/*
+	header @static Cache-Control "public, max-age=31536000, immutable"
+
+	reverse_proxy 127.0.0.1:3001
+}
