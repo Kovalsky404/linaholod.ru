@@ -1,16 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import {
-  BRAND,
-  CERTIFICATES_LABEL,
-  CTA,
-  NAV_LINKS,
-  RENT,
-} from "@/lib/site-config";
-import { CertificatesModal } from "@/components/ui/CertificatesModal";
-import type { ResolvedImage } from "@/sanity/types";
+import { BRAND, CERTIFICATES, CTA, NAV_LINKS, RENT } from "@/lib/site-config";
+import { useSectionHref } from "@/components/ui/SectionLink";
 
 // Две группы десктоп-навигации, как в макете (узел Figma 18:30):
 // слева у логотипа — Обо мне / Услуги / Портфолио, справа у CTA — Отзывы / Контакты.
@@ -21,16 +16,18 @@ const RIGHT_NAV = NAV_LINKS.filter((l) =>
   ["#reviews", "#contacts"].includes(l.href),
 );
 
+// aria-[current=page]: текущая страница (Аренда / Сертификаты) — в полный
+// цвет, как при наведении, чтобы было видно, где находишься.
 const navItemClass =
-  "text-foreground/80 hover:text-foreground text-sm uppercase transition-colors duration-200 ease-out";
+  "text-foreground/80 hover:text-foreground aria-[current=page]:text-foreground text-sm uppercase transition-colors duration-200 ease-out";
 
-// Пунктов стало семь. На lg (1024px) они помещались только впритык — правая
+// Пунктов семь. На lg (1024px) они помещались только впритык — правая
 // группа упиралась в логотип без зазора, свободного места оставалось ~48px на
 // всю строку. Поэтому горизонтальное меню включается с xl (1280), а до него
-// работает бургер: в нём есть все те же пункты, включая Прокат и Сертификаты.
+// работает бургер: в нём есть все те же пункты, включая Аренду и Сертификаты.
 const navGapClass = "gap-6 2xl:gap-8";
 
-/** Один пункт мобильного меню: и ссылки, и кнопка выглядят одинаково. */
+/** Один пункт мобильного меню: и якоря, и страницы выглядят одинаково. */
 const mobileItemClass =
   "heading-upper text-foreground border-foreground/10 border-b py-4 text-left text-3xl font-bold transition-[opacity,transform] duration-300 ease-out";
 
@@ -41,19 +38,26 @@ const mobileItemClass =
  * - sticky сверху; фон/блюр и нижняя граница появляются только после скролла,
  *   чтобы на самом верху шапка «растворялась» в hero (impeccable: тихий хром).
  * - десктоп: две группы меню как в макете — слева у логотипа (Обо мне /
- *   Услуги / Портфолио), справа у pill-кнопки «Записаться» (Отзывы / Контакты).
+ *   Услуги / Портфолио / Аренда одежды), справа у pill-кнопки «Записаться»
+ *   (Сертификаты / Отзывы / Контакты).
  * - мобайл: логотип + бургер; по тапу — полноэкранное меню с анимацией,
  *   блокировкой скролла, закрытием по Escape и якорю.
+ * - «Аренда одежды» и «Сертификаты» — отдельные страницы (next/link, без
+ *   перезагрузки). Текущая страница помечена aria-current.
+ * - якоря секций знают, на какой странице открыты: с подстраниц ведут на
+ *   главную к нужной секции (см. useSectionHref).
  * - smooth-scroll к секциям обеспечивается scroll-behavior на <html> и
  *   scroll-margin-top на секциях; всё уважает prefers-reduced-motion.
  */
-export function Header({
-  /** Кадр для окна «Сертификаты» из Sanity; без него — серая заглушка. */
-  certificatesImage,
-}: { certificatesImage?: ResolvedImage } = {}) {
+export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [certsOpen, setCertsOpen] = useState(false);
+  const pathname = usePathname();
+  const onHome = pathname === "/";
+  const toSection = useSectionHref();
+  /** aria-current для пунктов-страниц: скринридер слышит «текущая страница». */
+  const current = (href: string) =>
+    pathname === href ? ("page" as const) : undefined;
 
   // Появление фона шапки после небольшого скролла.
   useEffect(() => {
@@ -79,6 +83,9 @@ export function Header({
       window.removeEventListener("keydown", onKey);
     };
   }, [open, close]);
+
+  const logoClass =
+    "heading-upper text-foreground justify-self-center text-xl font-bold sm:text-3xl";
 
   return (
     // ВАЖНО: на <header> НЕТ backdrop-filter/transform — иначе он стал бы
@@ -122,52 +129,66 @@ export function Header({
               className={`hidden items-center xl:flex ${navGapClass}`}
             >
               {LEFT_NAV.map((link) => (
-                <a key={link.href} href={link.href} className={navItemClass}>
+                <a
+                  key={link.href}
+                  href={toSection(link.href)}
+                  className={navItemClass}
+                >
                   {link.label}
                 </a>
               ))}
-              {/* Прокат — внешний проект, поэтому в новой вкладке. */}
-              <a
+              <Link
                 href={RENT.href}
-                target="_blank"
-                rel="noopener noreferrer"
+                aria-current={current(RENT.href)}
                 className={navItemClass}
               >
                 {RENT.label}
-              </a>
+              </Link>
             </nav>
           </div>
 
-          {/* Центр: логотип */}
-          <a
-            href="#top"
-            className="heading-upper text-foreground justify-self-center text-xl font-bold sm:text-3xl"
-            aria-label={`${BRAND.name} — на главную`}
-          >
-            {BRAND.name}
-          </a>
+          {/* Центр: логотип. На главной — плавно наверх; с подстраниц — на
+              главную (Link, без перезагрузки). */}
+          {onHome ? (
+            <a
+              href="#top"
+              className={logoClass}
+              aria-label={`${BRAND.name} — на главную`}
+            >
+              {BRAND.name}
+            </a>
+          ) : (
+            <Link
+              href="/"
+              className={logoClass}
+              aria-label={`${BRAND.name} — на главную`}
+            >
+              {BRAND.name}
+            </Link>
+          )}
 
           {/* Правая зона: правая группа меню + CTA (десктоп). На мобайле пусто —
             grid сохраняет логотип по центру. */}
           <div
             className={`hidden items-center justify-end xl:flex ${navGapClass}`}
           >
-            {/* Кнопка, а не ссылка: открывает диалог, никуда не ведёт. Поэтому
-              и стоит ВНЕ <nav> — это не навигация по странице. */}
-            <button
-              type="button"
-              onClick={() => setCertsOpen(true)}
-              className={navItemClass}
-            >
-              {CERTIFICATES_LABEL}
-            </button>
-
             <nav
               aria-label="Дополнительная навигация"
               className={`flex items-center ${navGapClass}`}
             >
+              <Link
+                href={CERTIFICATES.href}
+                aria-current={current(CERTIFICATES.href)}
+                className={navItemClass}
+              >
+                {CERTIFICATES.label}
+              </Link>
               {RIGHT_NAV.map((link) => (
-                <a key={link.href} href={link.href} className={navItemClass}>
+                <a
+                  key={link.href}
+                  href={toSection(link.href)}
+                  className={navItemClass}
+                >
                   {link.label}
                 </a>
               ))}
@@ -200,42 +221,39 @@ export function Header({
           aria-label="Мобильная навигация"
           className="flex h-full flex-col gap-2 overflow-y-auto px-5 pt-6 pb-12"
         >
-          {[...NAV_LINKS, RENT].map((link, i) => {
-            const external = "external" in link;
-            return (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={close}
-                {...(external
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-                style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
-                className={`${mobileItemClass} ${
-                  open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
-                }`}
-              >
-                {link.label}
-              </a>
-            );
-          })}
+          {NAV_LINKS.map((link, i) => (
+            <a
+              key={link.href}
+              href={toSection(link.href)}
+              onClick={close}
+              style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
+              className={`${mobileItemClass} ${
+                open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+              }`}
+            >
+              {link.label}
+            </a>
+          ))}
 
-          {/* Сертификаты — кнопка: открывает диалог поверх закрывающегося меню */}
-          <button
-            type="button"
-            onClick={() => {
-              close();
-              setCertsOpen(true);
-            }}
-            style={{
-              transitionDelay: open ? `${NAV_LINKS.length * 40 + 40}ms` : "0ms",
-            }}
-            className={`${mobileItemClass} ${
-              open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
-            }`}
-          >
-            {CERTIFICATES_LABEL}
-          </button>
+          {/* Отдельные страницы — после якорей главной, тем же каскадом. */}
+          {[RENT, CERTIFICATES].map((page, i) => (
+            <Link
+              key={page.href}
+              href={page.href}
+              onClick={close}
+              aria-current={current(page.href)}
+              style={{
+                transitionDelay: open
+                  ? `${(NAV_LINKS.length + i) * 40}ms`
+                  : "0ms",
+              }}
+              className={`${mobileItemClass} ${
+                open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+              }`}
+            >
+              {page.label}
+            </Link>
+          ))}
 
           <a
             href={CTA.href}
@@ -248,12 +266,6 @@ export function Header({
           </a>
         </nav>
       </div>
-
-      <CertificatesModal
-        open={certsOpen}
-        onClose={() => setCertsOpen(false)}
-        image={certificatesImage}
-      />
     </header>
   );
 }

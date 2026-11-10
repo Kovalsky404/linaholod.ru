@@ -65,3 +65,59 @@ describe("Modal · фокус-трап", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("Modal · initialFocus и боковая панель", () => {
+  it("initialFocus=panel: фокус на панели, а не на крестике", () => {
+    // Окно, открытое без действия пользователя (приветственное), не должно
+    // рисовать рамку фокуса на крестике.
+    render(
+      <Modal open onClose={vi.fn()} title="Тест" initialFocus="panel" bare>
+        <button type="button">Действие</button>
+      </Modal>,
+    );
+    expect(screen.getByRole("dialog")).toHaveFocus();
+  });
+
+  it("с панели Tab идёт на первый элемент, Shift+Tab — на последний, не наружу", () => {
+    render(
+      <>
+        <button type="button">Снаружи</button>
+        <Modal open onClose={vi.fn()} title="Тест" initialFocus="panel" bare>
+          <button type="button">Действие</button>
+          <button type="button">Последняя</button>
+        </Modal>
+      </>,
+    );
+    const dialog = screen.getByRole("dialog");
+    const close = screen.getByRole("button", { name: "Закрыть" });
+    const last = screen.getByRole("button", { name: "Последняя" });
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(last).toHaveFocus();
+
+    dialog.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(close).toHaveFocus();
+  });
+
+  it("по умолчанию фокус по-прежнему на первом элементе", () => {
+    render(
+      <Modal open onClose={vi.fn()} title="Тест" bare>
+        <button type="button">Действие</button>
+      </Modal>,
+    );
+    expect(screen.getByRole("button", { name: "Закрыть" })).toHaveFocus();
+  });
+
+  it("placement=side остаётся доступным диалогом и закрывается по Escape", () => {
+    const onClose = vi.fn();
+    render(
+      <Modal open onClose={onClose} title="Условия" placement="side" bare>
+        <p>Текст</p>
+      </Modal>,
+    );
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Условия");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

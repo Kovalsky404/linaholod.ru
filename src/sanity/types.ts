@@ -31,7 +31,10 @@ export type PortfolioView = {
 
 /** Настройки сайта (поля, нужные секциям). Изображения — URL-строки. */
 export type SiteSettingsView = {
+  /** Рабочий чат (сейчас только в JSON-LD). */
   telegram?: string;
+  /** Telegram-канал — иконка в футере. */
+  telegramChannel?: string;
   instagram?: string;
   phone?: string;
   email?: string;
@@ -43,8 +46,22 @@ export type SiteSettingsView = {
   whyMeTitle?: string;
   whyMeText?: string;
   whyMeImage?: ResolvedImage;
-  /** Кадр для окна «Сертификаты» (пропорция 4:5). */
-  certificatesImage?: ResolvedImage;
   servicesTerms?: string;
   bookingIntro?: string;
+  /** Страница аренды: вступление (абзацы через пустую строку). */
+  rentIntro?: string;
+  /** Страница аренды: условия, по пункту на строку. */
+  rentTerms?: string;
+};
+
+/** Вещь каталога аренды для компонентов. */
+export type RentalItemView = {
+  id: string;
+  title: string;
+  image: ResolvedImage;
+  /** Ссылка на пост в Instagram; без неё кнопка «Instagram» ведёт в профиль. */
+  instagramUrl?: string;
+  category?: string;
+  size?: string;
+  price?: string;
 };

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { WelcomeOffer } from "@/components/ui/WelcomeOffer";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, buildJsonLd } from "@/lib/seo";
 import { getServices, getSiteSettings } from "@/sanity/content";
 
@@ -62,7 +63,7 @@ export default async function SiteLayout({
 
   // JSON-LD из Sanity (услуги + соцссылки) с фолбэком внутри buildJsonLd.
   const sameAs = settings
-    ? [settings.telegram, settings.instagram].filter(
+    ? [settings.telegram, settings.telegramChannel, settings.instagram].filter(
         (u): u is string => Boolean(u) && u !== "#",
       )
     : undefined;
@@ -82,18 +83,22 @@ export default async function SiteLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <span id="top" aria-hidden="true" />
-      <Header certificatesImage={settings?.certificatesImage} />
+      <Header />
       <main className="flex flex-1 flex-col">{children}</main>
       <Footer
         social={
           settings
             ? {
-                telegram: settings.telegram,
+                // В футере — канал, а не рабочий чат: в чат ведёт
+                // кнопка «Записаться» рядом.
+                telegram: settings.telegramChannel,
                 instagram: settings.instagram,
               }
             : undefined
         }
       />
+      {/* Скидка 10% новым посетителям — один раз на браузер. */}
+      <WelcomeOffer />
     </div>
   );
 }

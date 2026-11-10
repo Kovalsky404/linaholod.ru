@@ -38,6 +38,7 @@ export default defineConfig({
             S.documentTypeListItem("service").title("Услуги"),
             S.documentTypeListItem("portfolioItem").title("Портфолио"),
             S.documentTypeListItem("review").title("Отзывы"),
+            S.documentTypeListItem("rentalItem").title("Аренда — вещи"),
           ]),
     }),
     visionTool({ defaultApiVersion: apiVersion }),

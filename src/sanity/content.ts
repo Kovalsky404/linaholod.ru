@@ -4,12 +4,14 @@ import { urlFor } from "@/sanity/image";
 import { sanityFetch } from "@/sanity/fetch";
 import {
   portfolioQuery,
+  rentalItemsQuery,
   reviewsQuery,
   servicesQuery,
   siteSettingsQuery,
 } from "@/sanity/queries";
 import type {
   PortfolioView,
+  RentalItemView,
   ResolvedImage,
   ServiceView,
   SiteSettingsView,
@@ -96,8 +98,18 @@ type RawPortfolio = {
   video?: string;
 };
 type RawReview = { _id: string; author: string; text: string; rating?: number };
+type RawRentalItem = {
+  _id: string;
+  title?: string;
+  image?: SanityImageSource;
+  instagramUrl?: string;
+  category?: string;
+  size?: string;
+  price?: string;
+};
 type RawSettings = {
   telegram?: string;
+  telegramChannel?: string;
   instagram?: string;
   phone?: string;
   email?: string;
@@ -108,9 +120,10 @@ type RawSettings = {
   whyMeTitle?: string;
   whyMeText?: string;
   whyMeImage?: SanityImageSource;
-  certificatesImage?: SanityImageSource;
   servicesTerms?: string;
   bookingIntro?: string;
+  rentIntro?: string;
+  rentTerms?: string;
 };
 
 // ── Фетчеры с фолбэком на src/lib ──
@@ -206,12 +219,37 @@ export async function getReviews(): Promise<Review[]> {
   return [...REVIEWS];
 }
 
+/**
+ * Каталог аренды. Фолбэка-плейсхолдера нет НАМЕРЕННО: выдуманные вещи с
+ * кнопкой «Забронировать» хуже пустого каталога — посетитель напишет про
+ * вещь, которой не существует. Пусто (или CMS недоступна) → страница
+ * показывает приглашение в Instagram проката.
+ */
+export async function getRentalItems(): Promise<RentalItemView[]> {
+  const raw = await sanityFetch<RawRentalItem[]>(rentalItemsQuery);
+  if (!raw) return [];
+  return raw
+    .filter((r) => r.title && r.image)
+    .map((r) => ({
+      id: r._id,
+      title: r.title!.trim(),
+      // 1200: карточка — треть контейнера 1700px (≈530 CSS-px, ≈1060 на
+      // retina); на мобильном две колонки по ~45vw — меньше.
+      image: resolveImage(r.image, 1200),
+      instagramUrl: r.instagramUrl || undefined,
+      category: r.category || undefined,
+      size: r.size?.trim() || undefined,
+      price: r.price?.trim() || undefined,
+    }));
+}
+
 /** Настройки сайта (singleton). null → компоненты используют свои дефолты. */
 export async function getSiteSettings(): Promise<SiteSettingsView | null> {
   const raw = await sanityFetch<RawSettings>(siteSettingsQuery);
   if (!raw) return null;
   return {
     telegram: raw.telegram,
+    telegramChannel: raw.telegramChannel,
     instagram: raw.instagram,
     phone: raw.phone,
     email: raw.email,
@@ -231,12 +269,9 @@ export async function getSiteSettings(): Promise<SiteSettingsView | null> {
     whyMeText: raw.whyMeText,
     // 2000: блок занимает 41vw (на 1920 это 787 CSS-px, 1574 на retina).
     whyMeImage: raw.whyMeImage ? resolveImage(raw.whyMeImage, 2000) : undefined,
-    // 1200: колонка с кадром в окне — примерно 390 CSS-px на десктопе и
-    // ширина экрана на мобильном, то есть до ~860 физических на retina.
-    certificatesImage: raw.certificatesImage
-      ? resolveImage(raw.certificatesImage, 1200)
-      : undefined,
     servicesTerms: raw.servicesTerms,
     bookingIntro: raw.bookingIntro,
+    rentIntro: raw.rentIntro,
+    rentTerms: raw.rentTerms,
   };
 }

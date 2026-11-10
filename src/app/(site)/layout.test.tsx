@@ -150,10 +150,13 @@ describe("F13 · JSON-LD сериализация", () => {
 });
 
 describe("F13 · шов layout → Footer", () => {
-  it("L6. реальная ссылка Telegram из Sanity долетает до футера", async () => {
+  it("L6. Telegram-канал из Sanity долетает до футера, рабочий чат — нет", async () => {
+    // Поле «Telegram» в Studio — рабочий чат. В футер идёт отдельное поле
+    // «Telegram-канал»: перепутай проводку — иконка снова уведёт в чат.
     mockData({
       settings: {
-        telegram: "https://t.me/realaccount",
+        telegram: "https://t.me/workchat",
+        telegramChannel: "https://t.me/realchannel",
         instagram: "",
       },
     });
@@ -161,8 +164,19 @@ describe("F13 · шов layout → Footer", () => {
 
     const footer = container.querySelector<HTMLElement>("#contacts")!;
     expect(
-      within(footer).getByRole("link", { name: "Telegram" }),
-    ).toHaveAttribute("href", "https://t.me/realaccount");
+      within(footer).getByRole("link", { name: "Telegram-канал" }),
+    ).toHaveAttribute("href", "https://t.me/realchannel");
+  });
+
+  it("L6b. канал не задан в Sanity → канал по умолчанию, а не рабочий чат", async () => {
+    mockData({
+      settings: { telegram: "https://t.me/workchat", instagram: "" },
+    });
+    const { container } = await renderLayout();
+    const footer = container.querySelector<HTMLElement>("#contacts")!;
+    expect(
+      within(footer).getByRole("link", { name: "Telegram-канал" }),
+    ).toHaveAttribute("href", "https://t.me/asitwas_bylina");
   });
 });
 

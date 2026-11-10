@@ -24,6 +24,19 @@ export default defineConfig({
 
   use: {
     baseURL,
+    // Приветственное окно «−10%» всплывает через 3 с и перекрывает страницу:
+    // клики спеков, не связанных с ним, попадали бы в оверлей. Помечаем его
+    // как уже показанное. Сам сценарий окна (e2e/pages.spec.ts) сбрасывает
+    // это состояние у себя.
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: baseURL,
+          localStorage: [{ name: "lh:welcome-offer:v1", value: "e2e" }],
+        },
+      ],
+    },
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

@@ -1,5 +1,6 @@
 import { BRAND, CTA, NAV_LINKS, SOCIAL_LINKS } from "@/lib/site-config";
 import { SocialIcon } from "@/components/ui/SocialIcon";
+import { SectionLink } from "@/components/ui/SectionLink";
 
 /** Переопределения ссылок соцсетей из Sanity (по ключу). */
 type SocialOverrides = Partial<Record<"telegram" | "instagram", string>>;
@@ -7,6 +8,8 @@ type SocialOverrides = Partial<Record<"telegram" | "instagram", string>>;
 /**
  * Футер: панель меню + соцсети поверх гигантской надписи «lina H».
  * Ссылки соцсетей берутся из Sanity (siteSettings) с фолбэком на site-config.
+ * Telegram здесь — канал (поле «Telegram-канал»), а написать в рабочий чат
+ * можно кнопкой «Записаться» рядом.
  * id="contacts" — цель пункта меню «Контакты».
  */
 export function Footer({ social }: { social?: SocialOverrides } = {}) {
@@ -31,13 +34,13 @@ export function Footer({ social }: { social?: SocialOverrides } = {}) {
           {/* Разделы: на мобайле — столбцом, на десктопе — в строку */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
             {NAV_LINKS.slice(0, 3).map((link) => (
-              <a
+              <SectionLink
                 key={link.href}
-                href={link.href}
+                hash={link.href}
                 className="text-foreground/80 hover:text-foreground text-sm uppercase transition-colors duration-200 ease-out"
               >
                 {link.label}
-              </a>
+              </SectionLink>
             ))}
           </div>
 

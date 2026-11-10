@@ -1,8 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+// Текущий путь — единственный шов: от него зависят якоря и логотип.
+const pathname = vi.hoisted(() => ({ value: "/" }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname.value }));
+
 import { Header } from "./Header";
-import { CERTIFICATES_LABEL, NAV_LINKS, RENT } from "@/lib/site-config";
+import { CERTIFICATES, NAV_LINKS, RENT } from "@/lib/site-config";
 
 /**
  * F8 — шапка + мобильное меню (RTL, jsdom).
@@ -28,7 +33,10 @@ function setScrollY(v: number) {
     configurable: true,
   });
 }
-beforeEach(() => setScrollY(0));
+beforeEach(() => {
+  setScrollY(0);
+  pathname.value = "/";
+});
 afterEach(() => setScrollY(0));
 
 // ───────────────────── Тоггл и состояние ─────────────────────
@@ -111,9 +119,10 @@ describe("F8 · a11y-проводка и контент", () => {
     expect(burger()).toHaveAttribute("aria-label", "Открыть меню");
   });
 
-  it("7. десктоп: раскладка LEFT/RIGHT + CTA + лого (href из конфига)", () => {
+  it("7. десктоп на главной: раскладка LEFT/RIGHT, голые якоря, страницы, CTA, лого", () => {
     render(<Header />);
-    // LEFT: Обо мне / Портфолио / Услуги
+    // LEFT: Обо мне / Портфолио / Услуги — на главной якорь без «/», чтобы
+    // переход шёл внутри документа и не терял query (utm).
     expect(leftNav().getByRole("link", { name: "Обо мне" })).toHaveAttribute(
       "href",
       "#about",
@@ -135,13 +144,19 @@ describe("F8 · a11y-проводка и контент", () => {
       "href",
       "#contacts",
     );
-    // Прокат — внешний проект, живёт в левой группе рядом с разделами сайта.
-    const rent = leftNav().getByRole("link", { name: RENT.label });
-    expect(rent).toHaveAttribute("href", RENT.href);
-    expect(rent).toHaveAttribute("target", "_blank");
-    // rel обязателен у target=_blank: без noopener открытая вкладка получает
-    // доступ к window.opener.
-    expect(rent).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    // Аренда одежды — своя страница сайта (не Instagram): та же вкладка.
+    const rent = leftNav().getByRole("link", { name: "Аренда одежды" });
+    expect(rent).toHaveAttribute("href", "/rent");
+    expect(rent).not.toHaveAttribute("target");
+    // Сертификаты — тоже страница, в правой группе.
+    const certs = rightNav().getByRole("link", { name: "Сертификаты" });
+    expect(certs).toHaveAttribute("href", "/certificates");
+    expect(certs).not.toHaveAttribute("target");
+    // На главной ни одна из страниц не «текущая».
+    expect(rent).not.toHaveAttribute("aria-current");
+    expect(certs).not.toHaveAttribute("aria-current");
+    // Слово «Прокат» с сайта ушло целиком.
+    expect(screen.queryByText(/прокат/i)).not.toBeInTheDocument();
 
     // Меню закрыто → мобильные дубли вне a11y-дерева, поэтому CTA/лого уникальны
     const cta = screen.getByRole("link", { name: "Записаться" });
@@ -153,21 +168,47 @@ describe("F8 · a11y-проводка и контент", () => {
     ).toHaveAttribute("href", "#top");
   });
 
-  it("8. мобильное меню: все NAV_LINKS + Прокат + CTA + Сертификаты", async () => {
+  it("7b. на подстранице якоря ведут на главную, лого — на «/», пункт текущий", () => {
+    // Голый «#about» на /rent искал бы секцию, которой там нет: клик молча
+    // ничего бы не делал.
+    pathname.value = RENT.href;
+    render(<Header />);
+    expect(leftNav().getByRole("link", { name: "Обо мне" })).toHaveAttribute(
+      "href",
+      "/#about",
+    );
+    expect(rightNav().getByRole("link", { name: "Контакты" })).toHaveAttribute(
+      "href",
+      "/#contacts",
+    );
+    expect(
+      screen.getByRole("link", { name: "lina H. — на главную" }),
+    ).toHaveAttribute("href", "/");
+    expect(leftNav().getByRole("link", { name: RENT.label })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      rightNav().getByRole("link", { name: CERTIFICATES.label }),
+    ).not.toHaveAttribute("aria-current");
+  });
+
+  it("8. мобильное меню: все NAV_LINKS + Аренда + Сертификаты + CTA", async () => {
     const user = userEvent.setup();
     render(<Header />);
     await user.click(burger());
     const M = inMenu();
-    // 5 якорей + Прокат + CTA. Считаем, а не перечисляем: пропавший пункт
+    // 5 якорей + 2 страницы + CTA. Считаем, а не перечисляем: пропавший пункт
     // иначе заметить нечем — на мобильном это единственный способ навигации.
-    expect(M.getAllByRole("link")).toHaveLength(NAV_LINKS.length + 2);
-    const rent = M.getByRole("link", { name: RENT.label });
-    expect(rent).toHaveAttribute("href", RENT.href);
-    expect(rent).toHaveAttribute("target", "_blank");
-    // Сертификаты — кнопка, а не ссылка: открывает диалог.
-    expect(
-      M.getByRole("button", { name: CERTIFICATES_LABEL }),
-    ).toBeInTheDocument();
+    expect(M.getAllByRole("link")).toHaveLength(NAV_LINKS.length + 3);
+    expect(M.getByRole("link", { name: RENT.label })).toHaveAttribute(
+      "href",
+      "/rent",
+    );
+    expect(M.getByRole("link", { name: CERTIFICATES.label })).toHaveAttribute(
+      "href",
+      "/certificates",
+    );
     expect(M.getByRole("link", { name: "Обо мне" })).toHaveAttribute(
       "href",
       "#about",
@@ -181,83 +222,28 @@ describe("F8 · a11y-проводка и контент", () => {
       "https://t.me/holod_styling",
     );
   });
-});
 
-// ───────────────────── Сертификаты ─────────────────────
-describe("F8 · модалка сертификатов", () => {
-  const openCerts = async (user: ReturnType<typeof userEvent.setup>) => {
-    await user.click(screen.getByRole("button", { name: CERTIFICATES_LABEL }));
-    return screen.findByRole("dialog");
-  };
-
-  it("11. пункт «Сертификаты» открывает диалог с покупкой в Telegram", async () => {
-    const user = userEvent.setup();
-    render(<Header />);
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-    const dialog = await openCerts(user);
-    expect(dialog).toHaveAccessibleName(/Подарочный сертификат/);
-    // Ключевое обещание пункта: из окна можно уйти в чат. Проверяем адрес,
-    // а не факт наличия кнопки, — ссылка «в никуда» выглядела бы так же.
-    const buy = within(dialog).getByRole("link", { name: /Telegram/i });
-    expect(buy).toHaveAttribute("href", "https://t.me/holod_styling");
-    expect(buy).toHaveAttribute("target", "_blank");
-    expect(buy).toHaveAttribute("rel", expect.stringContaining("noopener"));
-  });
-
-  it("12. диалог закрывается по Escape и по кнопке «Закрыть»", async () => {
-    const user = userEvent.setup();
-    render(<Header />);
-
-    await openCerts(user);
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-    const dialog = await openCerts(user);
-    await user.click(within(dialog).getByRole("button", { name: "Закрыть" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("12b. кадр из Sanity попадает в окно; без него — серая заглушка", async () => {
-    const user = userEvent.setup();
-    const { rerender } = render(
-      <Header
-        certificatesImage={{ src: "https://cdn.x/cert.jpg", unoptimized: true }}
-      />,
-    );
-    const dialog = await openCerts(user);
-    // getAllBy: кадр декоративный (alt=""), поэтому ищем узлом, а не ролью.
-    expect(dialog.querySelector("img")).toHaveAttribute(
-      "src",
-      "https://cdn.x/cert.jpg",
-    );
-
-    fireEvent.keyDown(document, { key: "Escape" });
-    rerender(<Header />);
-    const plain = await openCerts(user);
-    // Пока клиент не залил фото, слот обязан показывать заглушку, а не
-    // пустоту: без неё колонка схлопнулась бы и раскладка окна поехала.
-    expect(plain.querySelector("img")).toHaveAttribute(
-      "src",
-      "/images/placeholder.svg",
-    );
-  });
-
-  it("13. из мобильного меню: меню закрывается, диалог открывается", async () => {
-    // Обе вещи разом: оставленное открытым меню перекрыло бы диалог собой,
-    // а незакрытое body.overflow заблокировало бы страницу после закрытия.
+  it("8b. мобильное меню на подстранице: якоря тоже ведут на главную", async () => {
+    pathname.value = CERTIFICATES.href;
     const user = userEvent.setup();
     render(<Header />);
     await user.click(burger());
-    expect(menuEl()).toHaveAttribute("aria-hidden", "false");
+    expect(inMenu().getByRole("link", { name: "Портфолио" })).toHaveAttribute(
+      "href",
+      "/#portfolio",
+    );
+    expect(
+      inMenu().getByRole("link", { name: CERTIFICATES.label }),
+    ).toHaveAttribute("aria-current", "page");
+  });
 
-    await user.click(
-      inMenu().getByRole("button", { name: CERTIFICATES_LABEL }),
-    );
-    expect(menuEl()).toHaveAttribute("aria-hidden", "true");
-    expect(await screen.findByRole("dialog")).toHaveAccessibleName(
-      /Подарочный сертификат/,
-    );
+  it("8c. шапка не открывает диалогов: сертификаты — страница, не окно", () => {
+    // Регресс-лок на прежнюю модалку: кнопки «Сертификаты» больше нет.
+    render(<Header />);
+    expect(
+      screen.queryByRole("button", { name: CERTIFICATES.label }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
 

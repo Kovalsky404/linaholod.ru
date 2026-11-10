@@ -18,6 +18,7 @@ import { sanityFetch } from "@/sanity/fetch";
 import { urlFor } from "@/sanity/image";
 import {
   getPortfolio,
+  getRentalItems,
   getReviews,
   getServices,
   getSiteSettings,
@@ -27,6 +28,7 @@ import {
 } from "@/sanity/content";
 import {
   portfolioQuery,
+  rentalItemsQuery,
   reviewsQuery,
   servicesQuery,
   siteSettingsQuery,
@@ -244,6 +246,7 @@ describe("F4 · путь с данными: маппинг", () => {
     // и обе ширины изображений (asymmetry «missing → undefined» — в S17).
     setFetch({
       telegram: "tg",
+      telegramChannel: "tgc",
       instagram: "ig",
       phone: "p",
       email: "e",
@@ -253,13 +256,19 @@ describe("F4 · путь с данными: маппинг", () => {
       whyMeTitle: "WT",
       whyMeText: "Wtext",
       whyMeImage: { __id: "w" },
+      // Поле удалено из схемы вместе с окном сертификатов. Старое значение
+      // в датасете не должно просочиться во view.
       certificatesImage: { __id: "c" },
       servicesTerms: "terms",
       bookingIntro: "intro",
+      rentIntro: "rint",
+      rentTerms: "rterms",
     });
     const r = await getSiteSettings();
     expect(r).toEqual({
       telegram: "tg",
+      // Канал отдельно от чата: перепутай их — иконка футера уведёт в чат.
+      telegramChannel: "tgc",
       instagram: "ig",
       phone: "p",
       email: "e",
@@ -271,11 +280,10 @@ describe("F4 · путь с данными: маппинг", () => {
       whyMeTitle: "WT",
       whyMeText: "Wtext",
       whyMeImage: { src: img("w", 2000), unoptimized: false },
-      // 1200: колонка кадра в окне «Сертификаты» — около 390 CSS-px на
-      // десктопе и ширина экрана на мобильном.
-      certificatesImage: { src: img("c", 1200), unoptimized: false },
       servicesTerms: "terms",
       bookingIntro: "intro",
+      rentIntro: "rint",
+      rentTerms: "rterms",
     });
     expect(fetchMock).toHaveBeenCalledWith(siteSettingsQuery);
   });
@@ -471,5 +479,72 @@ describe("F4 · портфолио: video / gallery / unoptimized", () => {
     ]);
     const r = await getPortfolio();
     expect(r.map((x) => x.number)).toEqual(["07", "#2"]);
+  });
+});
+
+// ───────────────────────── Каталог аренды ─────────────────────────
+describe("F4 · каталог аренды (getRentalItems)", () => {
+  it("R1. null / [] → пустой каталог, БЕЗ выдуманных вещей", async () => {
+    // Фолбэка-плейсхолдера нет намеренно: карточка с «Забронировать» на
+    // несуществующую вещь хуже пустого каталога.
+    setFetch(null);
+    expect(await getRentalItems()).toEqual([]);
+    setFetch([]);
+    expect(await getRentalItems()).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledWith(rentalItemsQuery);
+  });
+
+  it("R2. полный документ → view: ширина 1200, пустые поля → undefined, пробелы срезаны", async () => {
+    setFetch([
+      {
+        _id: "r1",
+        title: "  Платье  ",
+        image: { __id: "i1" },
+        instagramUrl: "https://www.instagram.com/p/X/",
+        category: "Платья",
+        size: " S ",
+        price: " 2 000 ₽ ",
+      },
+      {
+        _id: "r2",
+        title: "Жакет",
+        image: { __id: "i2" },
+        instagramUrl: "",
+        category: "",
+        size: "  ",
+        price: "",
+      },
+    ]);
+    expect(await getRentalItems()).toEqual([
+      {
+        id: "r1",
+        title: "Платье",
+        image: { src: img("i1", 1200), unoptimized: false },
+        instagramUrl: "https://www.instagram.com/p/X/",
+        category: "Платья",
+        size: "S",
+        price: "2 000 ₽",
+      },
+      {
+        id: "r2",
+        title: "Жакет",
+        image: { src: img("i2", 1200), unoptimized: false },
+        instagramUrl: undefined,
+        category: undefined,
+        size: undefined,
+        price: undefined,
+      },
+    ]);
+  });
+
+  it("R3. документ без названия или фото отбрасывается", async () => {
+    // Черновик в Studio (фото ещё не залито) не должен стать пустой
+    // карточкой с кнопкой брони.
+    setFetch([
+      { _id: "a", title: "Есть всё", image: { __id: "i" } },
+      { _id: "b", title: "", image: { __id: "i" } },
+      { _id: "c", title: "Без фото" },
+    ]);
+    expect((await getRentalItems()).map((r) => r.id)).toEqual(["a"]);
   });
 });

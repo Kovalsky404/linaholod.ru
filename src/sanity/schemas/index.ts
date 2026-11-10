@@ -3,6 +3,7 @@ import { siteSettings } from "./siteSettings";
 import { service } from "./service";
 import { portfolioItem } from "./portfolioItem";
 import { review } from "./review";
+import { rentalItem } from "./rentalItem";
 
 /** Все типы контента для Studio. */
 export const schemaTypes: SchemaTypeDefinition[] = [
@@ -10,4 +11,5 @@ export const schemaTypes: SchemaTypeDefinition[] = [
   service,
   portfolioItem,
   review,
+  rentalItem,
 ];

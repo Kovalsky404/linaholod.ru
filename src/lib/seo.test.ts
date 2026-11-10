@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildJsonLd, SITE_URL } from "./seo";
+import { buildJsonLd, pageMetadata, SITE_URL } from "./seo";
 import { SERVICES } from "@/lib/services";
 
 /**
@@ -31,7 +31,7 @@ const DEFAULT_OFFERS = SERVICES.map((s) => ({
 
 // sameAs: порядок соцссылок сохранён (см. SOCIAL_LINKS).
 const DEFAULT_SAMEAS = [
-  "https://t.me/AHL2060",
+  "https://t.me/asitwas_bylina",
   "https://www.instagram.com/_bulochka__s__makom_/",
 ];
 
@@ -151,5 +151,33 @@ describe("SITE_URL · env + trailing slash (dynamic import)", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", undefined as unknown as string);
     const mod = await import("./seo");
     expect(mod.SITE_URL).toBe("http://localhost:3000");
+  });
+});
+
+describe("pageMetadata · подстраницы", () => {
+  it("P1. canonical и og:url — путь САМОЙ страницы, а не главной", () => {
+    // Без своего canonical подстраница унаследовала бы «/» из layout, и
+    // поисковик счёл бы её дублем главной.
+    const m = pageMetadata({
+      title: "Аренда одежды",
+      description: "d",
+      path: "/rent",
+    });
+    expect(m.alternates.canonical).toBe("/rent");
+    expect(m.openGraph.url).toBe("/rent");
+  });
+
+  it("P2. openGraph полный: картинка и siteName не теряются при слиянии", () => {
+    // Next сливает метаданные поверхностно: частичный openGraph заменил бы
+    // родительский целиком, и превью в мессенджерах осталось бы без картинки.
+    const m = pageMetadata({
+      title: "Сертификат",
+      description: "d",
+      path: "/certificates",
+    });
+    expect(m.openGraph.images[0]!.url).toBe("/opengraph-image");
+    expect(m.openGraph.siteName).toBe("lina H.");
+    expect(m.openGraph.title).toBe("Сертификат | lina H.");
+    expect(m.twitter.images).toEqual(["/opengraph-image"]);
   });
 });

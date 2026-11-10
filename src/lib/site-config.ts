@@ -29,18 +29,52 @@ export const CTA = {
 } as const;
 
 /**
- * «Прокат» в шапке — отдельный проект (аренда образов), живёт в своём
- * Instagram. Не пункт NAV_LINKS: там только якоря секций этой страницы, и
- * внешний адрес сломал бы и типы, и мобильное меню, которое строится по ним.
+ * Ссылка на рабочий Telegram-чат с уже набранным сообщением.
+ *
+ * Параметр `text` у ссылок t.me/<username> — официальный (core.telegram.org/
+ * api/links): клиент подставляет его в поле ввода, отправляет человек сам.
+ * Так менеджер сразу видит, о какой вещи, сумме или скидке речь, а сайт по-
+ * прежнему ничего не собирает и не хранит. Старый клиент без поддержки просто
+ * откроет чат — ссылка не ломается.
+ */
+export function telegramMessage(text: string): string {
+  return `${CTA.href}?text=${encodeURIComponent(text)}`;
+}
+
+/** Письмо с заполненной темой и текстом — для кнопок «По почте». */
+export function mailMessage(email: string, subject: string, body: string) {
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+/**
+ * Почта для кнопок «По почте» (сертификаты). Поле «E-mail» в настройках
+ * Studio важнее; это значение — по умолчанию, если поле пустое.
+ * Пустая строка = почты нет: кнопка «По почте» не показывается, а в условиях
+ * остаётся только Telegram. Ссылки «в никуда» хуже отсутствующей кнопки.
+ */
+export const CONTACT_EMAIL = "info@linaholod.ru";
+
+/**
+ * «Аренда одежды» — отдельная страница-каталог. Сами вещи живут в Instagram
+ * проката, на сайте — их первые кадры со ссылками на посты.
+ * Не пункт NAV_LINKS: там только якоря секций главной.
  */
 export const RENT = {
-  label: "Прокат",
-  href: "https://www.instagram.com/holod.rent/",
-  external: true,
+  label: "Аренда одежды",
+  href: "/rent",
 } as const;
 
-/** Подписи пунктов шапки, которые открывают модалку, а не ведут по ссылке. */
-export const CERTIFICATES_LABEL = "Сертификаты";
+/** Instagram проката — профиль целиком (у каждой вещи ещё своя ссылка на пост). */
+export const RENT_INSTAGRAM = {
+  handle: "@holod.rent",
+  href: "https://www.instagram.com/holod.rent/",
+} as const;
+
+/** «Сертификаты» — отдельная страница с выбором дизайна и номинала. */
+export const CERTIFICATES = {
+  label: "Сертификаты",
+  href: "/certificates",
+} as const;
 
 export type SocialLink = {
   /** Машинный ключ — выбирает иконку в компоненте. */
@@ -50,12 +84,16 @@ export type SocialLink = {
   href: string;
 };
 
-/** Соцсети — реальные ссылки из брифа. */
+/**
+ * Соцсети в футере. Telegram здесь — КАНАЛ, а не рабочий чат: написать можно
+ * через кнопку «Записаться» рядом, а иконка ведёт туда, где можно следить за
+ * новостями. Переопределяется полем «Telegram-канал» в Studio.
+ */
 export const SOCIAL_LINKS: readonly SocialLink[] = [
   {
     key: "telegram",
-    label: "Telegram",
-    href: "https://t.me/AHL2060",
+    label: "Telegram-канал",
+    href: "https://t.me/asitwas_bylina",
   },
   {
     key: "instagram",

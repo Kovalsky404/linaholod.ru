@@ -55,3 +55,51 @@ export function buildJsonLd(input: JsonLdInput = {}) {
     },
   };
 }
+
+type PageMetaInput = {
+  /** Заголовок страницы (шаблон «%s | lina H.» добавит бренд сам). */
+  title: string;
+  description: string;
+  /** Путь от корня, например "/rent". */
+  path: `/${string}`;
+};
+
+/**
+ * Метаданные подстраницы.
+ *
+ * Нужны целиком, а не только title: Next сливает метаданные сегментов
+ * ПОВЕРХНОСТНО. Без своего `alternates` подстраница унаследовала бы
+ * canonical главной («/») — поисковик счёл бы её дублем и выкинул из
+ * индекса. По той же причине openGraph задаётся полностью: частичный объект
+ * заменил бы родительский вместе с картинкой и siteName.
+ */
+export function pageMetadata({ title, description, path }: PageMetaInput) {
+  const fullTitle = `${title} | ${SITE_NAME}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      type: "website" as const,
+      locale: "ru_RU",
+      url: path,
+      siteName: SITE_NAME,
+      title: fullTitle,
+      description,
+      images: [
+        {
+          url: "/opengraph-image",
+          width: 1200,
+          height: 630,
+          alt: `${SITE_NAME} — ${title.toLowerCase()}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title: fullTitle,
+      description,
+      images: ["/opengraph-image"],
+    },
+  };
+}

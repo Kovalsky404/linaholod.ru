@@ -13,6 +13,8 @@
   --color-muted: #2c2c2c; /* secondary body text   */
   --color-gray: #737373; /* dividers, footer marks */
   --color-placeholder: #d9d9d9; /* image placeholders     */
+  --color-surface: #f4f3f0; /* тёплая подложка: витрина сертификата, карточки */
+  --color-danger: #a3301c; /* текст ошибки ввода (сумма сертификата) */
 
   /* Typography */
   --font-sans:
@@ -132,6 +134,29 @@
   .btn-pill:hover {
     background-color: var(--color-foreground);
     color: var(--color-background);
+  }
+
+  /* Залитая pill-кнопка — для главного действия на экране («Купить
+     сертификат», «Забронировать», «Получить скидку»). Та же геометрия, что у
+     .btn-pill, только инверсия: заливка по умолчанию, на hover — светлее. */
+  .btn-solid {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    border: 2px solid var(--color-foreground);
+    border-radius: var(--radius-pill);
+    background-color: var(--color-foreground);
+    color: var(--color-background);
+    text-transform: uppercase;
+    transition:
+      background-color 200ms ease-out,
+      border-color 200ms ease-out;
+  }
+
+  .btn-solid:hover {
+    background-color: var(--color-muted);
+    border-color: var(--color-muted);
   }
 }
 

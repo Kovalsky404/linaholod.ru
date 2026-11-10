@@ -24,6 +24,19 @@ type ModalProps = {
    * раскладкой. Заголовок всё равно связывается с диалогом через aria-label.
    */
   bare?: boolean;
+  /**
+   * "center" (по умолчанию) — окно по центру; "side" — панель во всю высоту
+   * справа, выезжает сбоку (условия использования, длинные списки).
+   */
+  placement?: "center" | "side";
+  /**
+   * Куда поставить фокус при открытии. "first" (по умолчанию) — первый
+   * интерактивный элемент. "panel" — сама панель: для окон, открывшихся БЕЗ
+   * действия пользователя (приветственное предложение). Иначе браузер рисует
+   * рамку фокуса на крестике, хотя человек ничего не нажимал, а Tab всё
+   * равно ведёт на первый элемент.
+   */
+  initialFocus?: "first" | "panel";
 };
 
 // video[controls] включён намеренно: Chrome ставит такой плеер в порядок Tab.
@@ -55,6 +68,8 @@ export function Modal({
   children,
   size = "md",
   bare = false,
+  placement = "center",
+  initialFocus = "first",
 }: ModalProps) {
   const labelId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -76,9 +91,9 @@ export function Modal({
     if (!open) return;
     const panel = panelRef.current;
     if (!panel) return;
-    const first = focusablesOf(panel)[0];
+    const first = initialFocus === "first" ? focusablesOf(panel)[0] : null;
     (first ?? panel).focus();
-  }, [open]);
+  }, [open, initialFocus]);
 
   // Блокировка скролла + Escape + focus-trap, пока открыто.
   useEffect(() => {
@@ -108,6 +123,13 @@ export function Modal({
       if (!first || !last) return;
       const active = document.activeElement;
 
+      // Фокус на самой панели (initialFocus="panel"): Shift+Tab иначе ушёл
+      // бы на элемент страницы ПЕРЕД панелью — то есть из модалки.
+      if (active === panel) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+        return;
+      }
       if (e.shiftKey && active === first) {
         e.preventDefault();
         last.focus();
@@ -141,11 +163,25 @@ export function Modal({
   if (!open || typeof document === "undefined") return null;
 
   const isXl = size === "xl";
+  const isSide = placement === "side";
+  // Геометрия панели и её «въезд»: по центру — снизу на 8px, сбоку — справа.
+  const panelLayout = isSide
+    ? "h-full w-full max-w-[34rem]"
+    : `max-h-[92vh] ${isXl ? "w-full max-w-[96vw] md:w-auto" : "w-full max-w-lg"}`;
+  const panelMotion = isSide
+    ? visible
+      ? "translate-x-0 opacity-100"
+      : "translate-x-8 opacity-0"
+    : visible
+      ? "translate-y-0 opacity-100"
+      : "translate-y-2 opacity-0";
   return createPortal(
     <div
       onMouseDown={onOverlayMouseDown}
-      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300 ease-out ${
-        isXl ? "p-0 sm:p-4" : "p-5"
+      className={`fixed inset-0 z-[100] flex transition-opacity duration-300 ease-out ${
+        isSide
+          ? "items-stretch justify-end p-0"
+          : `items-center justify-center ${isXl ? "p-0 sm:p-4" : "p-5"}`
       } ${visible ? "opacity-100" : "opacity-0"}`}
     >
       {/* Оверлей */}
@@ -159,11 +195,9 @@ export function Modal({
         aria-label={bare ? title : undefined}
         aria-labelledby={bare ? undefined : labelId}
         tabIndex={-1}
-        className={`bg-background relative z-10 max-h-[92vh] overflow-auto shadow-xl transition-[opacity,transform] duration-300 ease-out outline-none ${
-          isXl ? "w-full max-w-[96vw] md:w-auto" : "w-full max-w-lg"
-        } ${bare ? "" : "p-6 sm:p-8"} ${
-          visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
-        }`}
+        className={`bg-background relative z-10 overflow-auto shadow-xl transition-[opacity,transform] duration-300 ease-out outline-none ${panelLayout} ${
+          bare ? "" : "p-6 sm:p-8"
+        } ${panelMotion}`}
       >
         <button
           type="button"

@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+const pathname = vi.hoisted(() => ({ value: "/" }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname.value }));
+
 import { Footer } from "./Footer";
 
 /**
@@ -14,20 +18,18 @@ import { Footer } from "./Footer";
 describe("F13 · Footer — мердж соцссылок (Sanity override ↔ дефолт)", () => {
   it("a. social не задан (проп опущен И social=undefined) → все дефолты SOCIAL_LINKS, без краша", () => {
     const { rerender } = render(<Footer />);
-    expect(screen.getByRole("link", { name: "Telegram" })).toHaveAttribute(
-      "href",
-      "https://t.me/AHL2060",
-    );
+    expect(
+      screen.getByRole("link", { name: "Telegram-канал" }),
+    ).toHaveAttribute("href", "https://t.me/asitwas_bylina");
     expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
       "href",
       "https://www.instagram.com/_bulochka__s__makom_/",
     );
 
     rerender(<Footer social={undefined} />);
-    expect(screen.getByRole("link", { name: "Telegram" })).toHaveAttribute(
-      "href",
-      "https://t.me/AHL2060",
-    );
+    expect(
+      screen.getByRole("link", { name: "Telegram-канал" }),
+    ).toHaveAttribute("href", "https://t.me/asitwas_bylina");
   });
 
   it("b. полный override — оба ключа побеждают дефолт", () => {
@@ -39,10 +41,9 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
         }}
       />,
     );
-    expect(screen.getByRole("link", { name: "Telegram" })).toHaveAttribute(
-      "href",
-      "https://t.me/realaccount",
-    );
+    expect(
+      screen.getByRole("link", { name: "Telegram-канал" }),
+    ).toHaveAttribute("href", "https://t.me/realaccount");
     expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
       "href",
       "https://instagram.com/realaccount",
@@ -51,10 +52,9 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
 
   it("c. поключевой override — instagram остаётся дефолтным, пока telegram уже реальный", () => {
     render(<Footer social={{ telegram: "https://t.me/realaccount" }} />);
-    expect(screen.getByRole("link", { name: "Telegram" })).toHaveAttribute(
-      "href",
-      "https://t.me/realaccount",
-    );
+    expect(
+      screen.getByRole("link", { name: "Telegram-канал" }),
+    ).toHaveAttribute("href", "https://t.me/realaccount");
     // Не all-or-nothing: override для instagram отсутствует → остаётся дефолт
     // из site-config, а не пустота и не адрес соседнего ключа.
     expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
@@ -65,10 +65,9 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
 
   it("d. falsy override (пустая строка) игнорируется — дефолт не затирается пустотой", () => {
     render(<Footer social={{ telegram: "" }} />);
-    expect(screen.getByRole("link", { name: "Telegram" })).toHaveAttribute(
-      "href",
-      "https://t.me/AHL2060",
-    );
+    expect(
+      screen.getByRole("link", { name: "Telegram-канал" }),
+    ).toHaveAttribute("href", "https://t.me/asitwas_bylina");
   });
 
   it("d2. порядок в DOM: соцсети ПЕРЕД кнопкой, без reverse/order", () => {
@@ -79,8 +78,8 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
     const { container } = render(<Footer />);
     const links = Array.from(container.querySelectorAll("a"))
       .map((a) => a.getAttribute("aria-label") ?? a.textContent?.trim() ?? "")
-      .filter((t) => ["Telegram", "Instagram", "Записаться"].includes(t));
-    expect(links).toEqual(["Telegram", "Instagram", "Записаться"]);
+      .filter((t) => ["Telegram-канал", "Instagram", "Записаться"].includes(t));
+    expect(links).toEqual(["Telegram-канал", "Instagram", "Записаться"]);
 
     // Якорь по РОЛИ, а не по href: ссылка на Telegram в соцсетях настраивается
     // из Sanity и может совпасть с адресом CTA — тогда querySelector нашёл бы
@@ -112,5 +111,31 @@ describe("F13 · Footer — мердж соцссылок (Sanity override ↔ �
     expect(cta).toHaveAttribute("href", "https://t.me/holod_styling");
     expect(cta).toHaveAttribute("target", "_blank");
     expect(cta).toHaveAttribute("rel", expect.stringContaining("noopener"));
+  });
+
+  it("f. Telegram в футере — КАНАЛ, а не рабочий чат из CTA", () => {
+    // Ради этого и правили: иконка вела в рабочий чат, дублируя кнопку
+    // «Записаться» рядом. Теперь у них разные адреса.
+    render(<Footer />);
+    const channel = screen.getByRole("link", { name: "Telegram-канал" });
+    const cta = screen.getByRole("link", { name: "Записаться" });
+    expect(channel).toHaveAttribute("href", "https://t.me/asitwas_bylina");
+    expect(channel.getAttribute("href")).not.toBe(cta.getAttribute("href"));
+  });
+
+  it("g. разделы футера: на главной — якоря, на подстранице — на главную", () => {
+    const { unmount } = render(<Footer />);
+    expect(screen.getByRole("link", { name: "Обо мне" })).toHaveAttribute(
+      "href",
+      "#about",
+    );
+    unmount();
+    pathname.value = "/rent";
+    render(<Footer />);
+    expect(screen.getByRole("link", { name: "Обо мне" })).toHaveAttribute(
+      "href",
+      "/#about",
+    );
+    pathname.value = "/";
   });
 });

@@ -2,7 +2,12 @@ import { defineType, defineField } from "sanity";
 
 /**
  * Настройки сайта (singleton) — соцсети, контакты и тексты секций,
- * которые задаются один раз: hero, «Обо мне», «Почему я?», приглашение формы.
+ * которые задаются один раз: hero, «Обо мне», «Почему я?», приглашение,
+ * тексты страницы аренды.
+ *
+ * Поле certificatesImage удалено вместе с окном сертификатов: теперь это
+ * отдельная страница с готовыми дизайнами. Сохранённое значение (если было)
+ * остаётся в датасете и просто не читается.
  */
 export const siteSettings = defineType({
   name: "siteSettings",
@@ -14,14 +19,26 @@ export const siteSettings = defineType({
     { name: "about", title: "Обо мне" },
     { name: "whyMe", title: "Почему я" },
     { name: "services", title: "Услуги" },
-    { name: "certificates", title: "Сертификаты" },
+    { name: "rent", title: "Аренда одежды" },
     { name: "booking", title: "Запись" },
   ],
   fields: [
     // Соцсети / контакты
     defineField({
       name: "telegram",
-      title: "Telegram (ссылка)",
+      title: "Telegram — рабочий чат (ссылка)",
+      description:
+        "Чат, куда пишут клиенты. Сейчас идёт только в разметку для " +
+        "поисковиков; кнопки «Записаться» ведут в чат, заданный в коде сайта.",
+      type: "url",
+      group: "social",
+    }),
+    defineField({
+      name: "telegramChannel",
+      title: "Telegram-канал (ссылка)",
+      description:
+        "Иконка Telegram в подвале сайта ведёт сюда. Пусто — используется " +
+        "канал по умолчанию (t.me/asitwas_bylina).",
       type: "url",
       group: "social",
     }),
@@ -43,7 +60,11 @@ export const siteSettings = defineType({
     defineField({
       name: "email",
       title: "E-mail",
+      description:
+        "Почта для кнопки «По почте» на странице сертификатов. Пусто — " +
+        "используется адрес по умолчанию из кода сайта (info@linaholod.ru).",
       type: "string",
+      validation: (Rule) => Rule.email(),
       group: "social",
     }),
 
@@ -118,19 +139,27 @@ export const siteSettings = defineType({
       group: "services",
     }),
 
-    // Сертификаты
+    // Аренда одежды (страница /rent). Сами вещи — отдельный тип
+    // «Аренда — вещи» в меню слева.
     defineField({
-      name: "certificatesImage",
-      title: "Фото для окна «Сертификаты»",
+      name: "rentIntro",
+      title: "Аренда: вступительный текст",
       description:
-        "Вертикальный кадр в пропорции 4:5 (например 1600×2000) — на " +
-        "широком экране показывается целиком, без обрезки. Другую пропорцию " +
-        "вёрстка не сломает, но кадр обрежется по центру. На узких экранах " +
-        "и телефоне он показывается полосой сверху. Пока фото не залито — " +
-        "серая заглушка.",
-      type: "image",
-      options: { hotspot: true },
-      group: "certificates",
+        "Абзац под заголовком страницы. Абзацы разделяются пустой строкой. " +
+        "Пусто — показывается текст по умолчанию.",
+      type: "text",
+      rows: 4,
+      group: "rent",
+    }),
+    defineField({
+      name: "rentTerms",
+      title: "Аренда: условия",
+      description:
+        "Тёмный блок «Условия аренды». Каждый пункт с новой строки. Пусто — " +
+        "показываются общие условия по умолчанию.",
+      type: "text",
+      rows: 6,
+      group: "rent",
     }),
 
     // Запись
