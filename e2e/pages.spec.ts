@@ -65,7 +65,9 @@ test.describe("страница сертификата", () => {
     await page.getByRole("button", { name: "Условия использования" }).click();
     const dialog = page.getByRole("dialog", { name: "Условия использования" });
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText("Срок действия сертификата — 1 год.");
+    await expect(dialog).toContainText(
+      "Срок действия сертификата — 6 месяцев.",
+    );
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
   });

@@ -169,7 +169,9 @@ describe("CertificateShop · условия", () => {
       name: "Условия использования",
     });
     const items = within(dialog).getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("Срок действия сертификата — 1 год.");
+    expect(items[0]).toHaveTextContent(
+      "Срок действия сертификата — 6 месяцев.",
+    );
     expect(dialog).toHaveTextContent("от 500 до 500 000 рублей");
     expect(dialog).toHaveTextContent("отправлен в СМС");
     expect(dialog).toHaveTextContent("разделить на несколько покупок");
