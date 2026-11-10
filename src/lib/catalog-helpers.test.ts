@@ -6,7 +6,14 @@ import {
   formatRub,
   isValidAmount,
 } from "./certificates";
-import { itemsCount, rentalRequest, toLines, toParagraphs } from "./rent";
+import {
+  itemsCount,
+  pickShowcase,
+  rentalRequest,
+  splitPrice,
+  toLines,
+  toParagraphs,
+} from "./rent";
 import { mailMessage, telegramMessage } from "./site-config";
 
 /** Чистые хелперы сертификатов, аренды и ссылок с готовым текстом. */
@@ -105,5 +112,43 @@ describe("аренда: тексты", () => {
 
   it("toParagraphs режет по пустой строке", () => {
     expect(toParagraphs("А\nБ\n\n\nВ")).toEqual(["А\nБ", "В"]);
+  });
+});
+
+describe("аренда: цена и витрина", () => {
+  it("splitPrice делит сумму, единицу и примечание", () => {
+    expect(splitPrice("1 600 ₽ / сутки, по отдельности — 800 ₽")).toEqual({
+      amount: "1 600 ₽",
+      unit: "/ сутки",
+      note: "по отдельности — 800 ₽",
+    });
+    expect(splitPrice("500 ₽ / сутки")).toEqual({
+      amount: "500 ₽",
+      unit: "/ сутки",
+    });
+    // Свободный текст без «/» и запятой — целиком суммой, ничего не теряется.
+    expect(splitPrice("по запросу")).toEqual({ amount: "по запросу" });
+  });
+
+  it("pickShowcase: одежда важнее аксессуаров, главная вещь — в центре веера", () => {
+    const items = [
+      { id: "belt", category: "Аксессуары" },
+      { id: "vest", category: "Верх" },
+      { id: "shorts", category: "Низ" },
+      { id: "set", category: "Костюмы" },
+    ];
+    // Первая по значимости (vest) — в середину, слева вторая, справа третья.
+    expect(pickShowcase(items).map((i) => i.id)).toEqual([
+      "shorts",
+      "vest",
+      "set",
+    ]);
+    // Одежды мало — добираем аксессуарами, пустых мест нет.
+    expect(
+      pickShowcase([{ id: "a", category: "Аксессуары" }, { id: "b" }]).map(
+        (i) => i.id,
+      ),
+    ).toEqual(["a", "b"]);
+    expect(pickShowcase([])).toEqual([]);
   });
 });

@@ -73,13 +73,22 @@ describe("RentCatalog", () => {
     ]);
   });
 
-  it("4. размер и цена показываются, когда заданы", () => {
+  it("4. цена крупно отдельно от «/ сутки», размер — чипом, примечание — строкой", () => {
     render(
-      <RentCatalog items={[item({ size: "S–M", price: "2 500 ₽ / сутки" })]} />,
+      <RentCatalog
+        items={[
+          item({
+            size: "M/L",
+            price: "1 600 ₽ / сутки, по отдельности — 800 ₽",
+          }),
+        ]}
+      />,
     );
-    expect(
-      screen.getByText("Размер S–M · 2 500 ₽ / сутки"),
-    ).toBeInTheDocument();
+    const card = within(screen.getByRole("article"));
+    expect(card.getByText("1 600 ₽")).toBeInTheDocument();
+    expect(card.getByText("/ сутки")).toBeInTheDocument();
+    expect(card.getByText("Размер M/L")).toBeInTheDocument();
+    expect(card.getByText("по отдельности — 800 ₽")).toBeInTheDocument();
   });
 
   it("5. пустой каталог зовёт в Instagram проката, карточек нет", () => {
@@ -118,12 +127,18 @@ describe("RentCatalog", () => {
       />,
     );
     const group = screen.getByRole("group", { name: "Фильтр по категориям" });
+    const chips = within(group).getAllByRole("button");
+    // Имя кнопки — категория; число вещей рядом видно глазу, но в имя не
+    // входит (aria-hidden), чтобы скринридер не читал «Обувь два».
+    expect(chips.map((b) => b.textContent)).toEqual([
+      "Все3",
+      "Платья1",
+      "Обувь2",
+    ]);
     expect(
-      within(group)
-        .getAllByRole("button")
-        .map((b) => b.textContent),
-    ).toEqual(["Все", "Платья", "Обувь"]);
-    expect(screen.getByText("3 вещи")).toBeInTheDocument();
+      within(group).getByRole("button", { name: "Обувь" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("rent-count")).toHaveTextContent("3 вещи");
 
     await user.click(within(group).getByRole("button", { name: "Обувь" }));
     expect(
@@ -131,9 +146,66 @@ describe("RentCatalog", () => {
     ).toHaveAttribute("aria-pressed", "true");
     expect(screen.getAllByRole("article")).toHaveLength(2);
     expect(screen.queryByText("Платье")).not.toBeInTheDocument();
-    expect(screen.getByText("2 вещи")).toBeInTheDocument();
+    // Живая область сообщает скринридеру, сколько осталось.
+    expect(screen.getByTestId("rent-count")).toHaveTextContent("2 вещи");
+    expect(screen.getByTestId("rent-count")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
 
     await user.click(within(group).getByRole("button", { name: "Все" }));
     expect(screen.getAllByRole("article")).toHaveLength(3);
+  });
+
+  it("8. кадр открывает быстрый просмотр: фото крупно, цена, размер и бронь", async () => {
+    const user = userEvent.setup();
+    render(
+      <RentCatalog
+        items={[
+          item({ category: "Платья", size: "S", price: "2 000 ₽ / сутки" }),
+          item({ id: "i2", title: "Жакет" }),
+        ]}
+      />,
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Подробнее: Шёлковое платье" }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Шёлковое платье" });
+    const d = within(dialog);
+    expect(d.getByRole("img", { name: "Шёлковое платье" })).toBeInTheDocument();
+    expect(d.getByText("2 000 ₽")).toBeInTheDocument();
+    expect(d.getByText("Размер S")).toBeInTheDocument();
+    // Ключевые условия — прямо в карточке вещи.
+    expect(d.getByText("предоплата закрепляет бронь")).toBeInTheDocument();
+
+    // Бронь ведёт туда же, куда кнопка на карточке: та же вещь, тот же текст.
+    const book = d.getByRole("link", { name: "Забронировать в Telegram" });
+    const cardBook = screen.getByRole("link", {
+      name: "Забронировать: Шёлковое платье",
+    });
+    expect(book.getAttribute("href")).toBe(cardBook.getAttribute("href"));
+    expect(
+      d.getByRole("link", {
+        name: "Шёлковое платье — открыть пост в Instagram",
+      }),
+    ).toHaveAttribute("href", "https://www.instagram.com/p/AAA/");
+  });
+
+  it("9. быстрый просмотр закрывается и открывает другую вещь", async () => {
+    const user = userEvent.setup();
+    render(
+      <RentCatalog items={[item(), item({ id: "i2", title: "Жакет" })]} />,
+    );
+    await user.click(screen.getByRole("button", { name: "Подробнее: Жакет" }));
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Жакет");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Подробнее: Шёлковое платье" }),
+    );
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Шёлковое платье");
   });
 });

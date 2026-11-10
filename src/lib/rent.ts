@@ -24,7 +24,56 @@ export const RENTAL_CATEGORIES = [
  * По закреплённому посту «Правила аренды» и шапке профиля @holod.rent.
  */
 export const RENT_INTRO_FALLBACK =
-  "Одежда и аксессуары для съёмок, кампейнов, контента, мероприятий и особых случаев. Подбор образа стилистом включён в стоимость аренды.\n\nВыберите вещь в каталоге и забронируйте её в Telegram: название уже будет в сообщении — останется указать дату и время.";
+  "Одежда и аксессуары для съёмок, кампейнов, контента и особых случаев. Выберите вещь в каталоге — бронь в Telegram в один клик.";
+
+/**
+ * Три главных факта из «Правил аренды» — крупно на первом экране и в
+ * быстром просмотре вещи. Полный список — RENT_TERMS_FALLBACK (или поле
+ * Studio). Поменялись правила в Instagram — поменять и здесь.
+ */
+export const RENT_FACTS = [
+  { value: "24 ч", label: "стандартный срок аренды" },
+  { value: "50%", label: "предоплата закрепляет бронь" },
+  { value: "0 ₽", label: "подбор образа стилистом" },
+] as const;
+
+/**
+ * Цена из Studio — свободный текст («1 600 ₽ / сутки, по отдельности —
+ * 800 ₽»). Для карточки делим его на сумму (крупно), единицу («/ сутки»,
+ * мельче) и примечание (после первой запятой, отдельной строкой). Если
+ * формат другой — вся строка идёт суммой, ничего не теряется.
+ */
+export function splitPrice(price: string): {
+  amount: string;
+  unit?: string;
+  note?: string;
+} {
+  const comma = price.indexOf(",");
+  const head = (comma === -1 ? price : price.slice(0, comma)).trim();
+  const note = comma === -1 ? undefined : price.slice(comma + 1).trim();
+  const slash = head.indexOf("/");
+  const amount = (slash === -1 ? head : head.slice(0, slash)).trim();
+  const unit = slash === -1 ? undefined : head.slice(slash).trim();
+  return {
+    amount: amount || price.trim(),
+    ...(unit ? { unit } : {}),
+    ...(note ? { note } : {}),
+  };
+}
+
+/**
+ * Три вещи для витрины первого экрана. Одежда важнее аксессуаров (образ
+ * читается лучше, чем ремень), порядок внутри — как в каталоге. Средняя
+ * карточка в веере — главная, поэтому первая по значимости встаёт в центр.
+ */
+export function pickShowcase<T extends { category?: string }>(
+  items: readonly T[],
+): T[] {
+  const clothes = items.filter((i) => i.category !== "Аксессуары");
+  const rest = items.filter((i) => i.category === "Аксессуары");
+  const [a, b, c] = [...clothes, ...rest];
+  return [b, a, c].filter((x): x is T => Boolean(x));
+}
 
 /**
  * Условия, пока в Studio не заданы свои. Пересказ закреплённого поста

@@ -160,6 +160,19 @@
   }
 }
 
+/* Проявление карточек каталога аренды при смене фильтра (см. RentCatalog).
+   both: до старта задержки карточка уже прозрачна — без мигания. */
+@keyframes rent-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Respect users who prefer reduced motion — disable all transitions.
    Ленты отзывов сюда не попадают: их движение — не CSS-анимация, а изменение
    scrollLeft из JS, поэтому AutoScroller проверяет эту media-query сам.

@@ -16,7 +16,7 @@ import {
   type CertificateDesign,
 } from "@/lib/certificates";
 import { mailMessage, telegramMessage } from "@/lib/site-config";
-import { Modal } from "@/components/ui/Modal";
+import { TermsDrawer } from "@/components/ui/TermsDrawer";
 import { TelegramGlyph } from "@/components/ui/SocialIcon";
 
 // noUncheckedIndexedAccess: массив непустой по построению, проверка — для типов.
@@ -373,46 +373,12 @@ export function CertificateShop({ email }: { email?: string }) {
         </div>
       </div>
 
-      <Modal
+      <TermsDrawer
         open={termsOpen}
         onClose={() => setTermsOpen(false)}
         title="Условия использования"
-        placement="side"
-        bare
-      >
-        <div className="flex min-h-full flex-col">
-          <h2 className="heading-upper text-foreground border-foreground/10 border-b px-6 pt-8 pr-16 pb-6 text-xl font-bold sm:px-10 sm:text-2xl">
-            Условия использования
-          </h2>
-          <ol className="flex-1 px-6 py-4 sm:px-10">
-            {termsList(email).map((term, i) => (
-              <li
-                key={i}
-                className="border-foreground/10 flex gap-4 border-b py-4 last:border-b-0"
-              >
-                <span
-                  aria-hidden="true"
-                  className="heading-upper text-gray w-6 shrink-0 pt-0.5 text-sm"
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <p className="text-muted text-[0.9375rem] leading-relaxed">
-                  {term}
-                </p>
-              </li>
-            ))}
-          </ol>
-          <div className="bg-background border-foreground/10 sticky bottom-0 border-t px-6 py-4 sm:px-10">
-            <button
-              type="button"
-              onClick={() => setTermsOpen(false)}
-              className="btn-pill h-12 w-full text-sm font-medium"
-            >
-              Закрыть
-            </button>
-          </div>
-        </div>
-      </Modal>
+        items={termsList(email)}
+      />
     </>
   );
 }

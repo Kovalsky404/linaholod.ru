@@ -86,12 +86,41 @@ test.describe("страница аренды", () => {
       await expect(
         cards.first().getByRole("link", { name: /пост в Instagram$/ }),
       ).toHaveAttribute("href", /instagram\.com/);
+
+      // Быстрый просмотр: кадр открывает панель с той же бронью.
+      const book = await cards
+        .first()
+        .getByRole("link", { name: /^Забронировать:/ })
+        .getAttribute("href");
+      await cards
+        .first()
+        .getByRole("button", { name: /^Подробнее:/ })
+        .click();
+      const quick = page.getByRole("dialog");
+      await expect(quick).toBeVisible();
+      await expect(
+        quick.getByRole("link", { name: "Забронировать в Telegram" }),
+      ).toHaveAttribute("href", book!);
+      await page.keyboard.press("Escape");
+      await expect(quick).toBeHidden();
     } else {
       await expect(catalog.getByText("Каталог обновляется")).toBeVisible();
       await expect(
         catalog.getByRole("link", { name: /@holod\.rent/ }),
       ).toHaveAttribute("href", "https://www.instagram.com/holod.rent/");
     }
+  });
+
+  test("4b. «Правила аренды» открывают панель с правилами", async ({
+    page,
+  }) => {
+    await page.goto("/rent");
+    await page.getByRole("button", { name: "Правила аренды" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "Правила аренды" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("24 часа");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
   });
 
   test("5. «Обо мне» с подстраницы ведёт на главную к секции", async ({
